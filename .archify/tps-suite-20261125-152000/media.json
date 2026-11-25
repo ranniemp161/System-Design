@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Media Delivery: Database Path vs Direct Storage Path",
+    "output": ".archify/tps-suite-20261125-152000/media.html",
+    "quality_profile": "showcase",
+    "parentHref": "launch.html",
+    "views": [
+      {
+        "id": "path-a",
+        "label": "A: media inside the database",
+        "focus": [
+          "b1",
+          "api",
+          "orm",
+          "db"
+        ],
+        "note": "Every uncached view pushes the whole file through the app and database."
+      },
+      {
+        "id": "path-b",
+        "label": "B: direct storage (TPS design)",
+        "focus": [
+          "b2",
+          "cdn",
+          "r2"
+        ],
+        "note": "Files come from Cloudflare's cache; R2 is read only on a miss. The TPS app is not involved."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "b1",
+      "type": "external",
+      "label": "Visitor's browser",
+      "sublabel": "asks for an image",
+      "icon": "person",
+      "pos": [
+        40,
+        70
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Application",
+      "sublabel": "API holds the whole file",
+      "pos": [
+        330,
+        70
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "explanation": "Fully buffering a 2 MB image means 100 simultaneous requests hold about 200 MB in one instance (illustrative; streaming changes this). Large media competes with business requests for memory, CPU and connections."
+    },
+    {
+      "id": "orm",
+      "type": "backend",
+      "label": "Database connector",
+      "sublabel": "Prisma · serializes rows",
+      "brand": "prisma",
+      "pos": [
+        620,
+        70
+      ],
+      "size": [
+        170,
+        60
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Database",
+      "sublabel": "PostgreSQL · BYTEA column",
+      "brand": "postgresql",
+      "pos": [
+        900,
+        70
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "explanation": "BYTEA is a valid choice for small transactional binary records, such as a 2 KB signature. For large media, each uncached read adds SQL processing, protocol serialization, possible decompression, encryption, network transfer and storage I/O, and backups and exports grow."
+    },
+    {
+      "id": "b2",
+      "type": "external",
+      "label": "Visitor's browser",
+      "sublabel": "loads a media URL",
+      "icon": "person",
+      "pos": [
+        40,
+        250
+      ],
+      "size": [
+        160,
+        60
+      ]
+    },
+    {
+      "id": "cdn",
+      "type": "cloud",
+      "label": "Cloudflare CDN",
+      "sublabel": "edge cache",
+      "brand": "cloudflare",
+      "pos": [
+        330,
+        250
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "explanation": "Serves cached copies close to the visitor. Only a cache miss is fetched from R2."
+    },
+    {
+      "id": "r2",
+      "type": "cloud",
+      "label": "Photo + video storage",
+      "sublabel": "Cloudflare R2",
+      "brand": "cloudflare",
+      "pos": [
+        620,
+        250
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "explanation": "Object storage for the 170.15 MB library. Public media is read directly; private files would still need authorization and signed URLs. If PostgreSQL is used, it can store each file's metadata and R2 object key. R2 and the database need their own backup and consistency policies."
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "A · Media stored in the database (uncached)",
+      "wraps": [
+        "b1",
+        "api",
+        "orm",
+        "db"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "B · Direct object storage (TPS launch design)",
+      "wraps": [
+        "b2",
+        "cdn",
+        "r2"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "a-req",
+      "from": "b1",
+      "to": "api",
+      "label": "GET /image"
+    },
+    {
+      "id": "a-orm",
+      "from": "api",
+      "to": "orm",
+      "label": "query"
+    },
+    {
+      "id": "a-sql",
+      "from": "orm",
+      "to": "db",
+      "label": "SELECT bytes"
+    },
+    {
+      "id": "a-ret-db",
+      "from": "db",
+      "to": "api",
+      "label": "whole file",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "top"
+    },
+    {
+      "id": "a-ret-api",
+      "from": "api",
+      "to": "b1",
+      "label": "whole file",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "bottom"
+    },
+    {
+      "id": "b-req",
+      "from": "b2",
+      "to": "cdn",
+      "label": "GET media URL"
+    },
+    {
+      "id": "b-miss",
+      "from": "cdn",
+      "to": "r2",
+      "label": "miss only",
+      "variant": "dashed"
+    },
+    {
+      "id": "b-bytes",
+      "from": "cdn",
+      "to": "b2",
+      "label": "media file",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "When the database is right",
+      "items": [
+        "Small transactional binary records (a 2 KB record vs a 2 MB image is 1,000× the payload)",
+        "Media metadata and R2 object keys"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Cost of path A per uncached view",
+      "items": [
+        "SQL, serialization, buffering, encryption, transfer, storage I/O",
+        "Competes with business queries",
+        "Backups grow with media"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Fair comparison",
+      "items": [
+        "Streaming and caching can also help path A; this compares against uncached database delivery only",
+        "Path B removes media bytes from the TPS app and database, not all infrastructure work"
+      ]
+    }
+  ]
+}

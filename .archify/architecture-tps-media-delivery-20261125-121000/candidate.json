@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Media Delivery: Database Path vs Direct Object Path",
+    "output": ".archify/architecture-tps-media-delivery-20261125-121000/tps-media-delivery.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "b1", "type": "external", "label": "Browser", "sublabel": "requests an image", "icon": "person", "pos": [40, 200], "size": [150, 60] },
+    { "id": "api", "type": "backend", "label": "Application API", "sublabel": "buffers whole file", "pos": [330, 200], "size": [170, 60] },
+    { "id": "orm", "type": "backend", "label": "Prisma ORM", "sublabel": "serialize rows", "brand": "prisma", "pos": [620, 200], "size": [160, 60] },
+    { "id": "db", "type": "database", "label": "PostgreSQL", "sublabel": "BYTEA column", "brand": "postgresql", "pos": [900, 200], "size": [170, 60] },
+    { "id": "b2", "type": "external", "label": "Browser", "sublabel": "loads media URL", "icon": "person", "pos": [40, 470], "size": [150, 60] },
+    { "id": "cdn", "type": "cloud", "label": "Cloudflare CDN", "sublabel": "edge cache", "brand": "cloudflare", "pos": [330, 470], "size": [170, 60] },
+    { "id": "r2", "type": "cloud", "label": "R2", "sublabel": "object storage", "brand": "cloudflare", "pos": [620, 470], "size": [160, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "A · Uncached database-backed delivery", "wraps": ["b1", "api", "orm", "db"] },
+    { "kind": "region", "label": "B · Direct object delivery (TPS launch design)", "wraps": ["b2", "cdn", "r2"] }
+  ],
+  "connections": [
+    { "id": "a-req", "from": "b1", "to": "api", "label": "GET /image" },
+    { "id": "a-orm", "from": "api", "to": "orm", "label": "query" },
+    { "id": "a-sql", "from": "orm", "to": "db", "label": "SELECT bytes" },
+    { "id": "a-ret-db", "from": "db", "to": "api", "label": "binary payload", "variant": "emphasis", "fromSide": "top", "toSide": "top" },
+    { "id": "a-ret-api", "from": "api", "to": "b1", "label": "binary payload", "variant": "emphasis", "fromSide": "bottom", "toSide": "bottom" },
+    { "id": "b-req", "from": "b2", "to": "cdn", "label": "GET media URL" },
+    { "id": "b-miss", "from": "cdn", "to": "r2", "label": "miss only", "variant": "dashed" },
+    { "id": "b-bytes", "from": "cdn", "to": "b2", "label": "media bytes", "variant": "emphasis", "fromSide": "bottom", "toSide": "bottom" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "BYTEA is valid", "items": ["Good for small transactional binary records (e.g. a 2 KB signature)", "Store media metadata and R2 object keys in PostgreSQL if needed"] },
+    { "dot": "rose", "title": "Cost of path A on a cache miss", "items": ["SQL processing, protocol serialization, possible decompression", "API buffering, encryption, network transfer, storage I/O", "Large media competes with business queries for memory, CPU and connections", "Backups and exports grow with media"] },
+    { "dot": "amber", "title": "What path B changes", "items": ["Removes public media bytes from the TPS API and database path, not all infrastructure work", "Streaming and CDN caching can also help path A; this compares against uncached database delivery only", "Private files still need authorization and signed URLs", "R2 and the database need independent recovery and consistency policies"] }
+  ]
+}

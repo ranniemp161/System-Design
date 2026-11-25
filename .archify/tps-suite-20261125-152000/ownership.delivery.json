@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "35a82752-e481-47ab-b376-c5cb3713f30e",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "D:\\Dev Folder\\System Design\\.archify\\tps-suite-20261125-152000\\ownership.json",
+  "output": "D:\\Dev Folder\\System Design\\.archify\\tps-suite-20261125-152000\\ownership.html",
+  "specification": {
+    "sha256": "4bdb1408f9c89d5b7dc0309cb0ad00ed63e4a57ba8e7308d663b96057ae4a3c6",
+    "bytes": 5039
+  },
+  "artifact": {
+    "sha256": "3cdba10c20de6c934de5962d10c5d16b5c838a52bc2715d5ba50cc17f011d39d",
+    "bytes": 936658
+  }
+}

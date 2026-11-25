@@ -1,0 +1,386 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Serverful vs Serverless: What Vercel Abstracts",
+    "output": ".archify/tps-suite-20261125-152000/serverful.html",
+    "quality_profile": "showcase",
+    "parentHref": "launch.html",
+    "legend": {
+      "entries": {
+        "security": {
+          "label": "Protection layer"
+        },
+        "cloud": {
+          "label": "Routing / traffic layer"
+        },
+        "backend": {
+          "label": "Application"
+        },
+        "database": {
+          "label": "Database"
+        },
+        "external": {
+          "label": "Visitor"
+        },
+        "frontend": {
+          "label": "Managed by Vercel"
+        }
+      }
+    },
+    "views": [
+      {
+        "id": "serverful",
+        "label": "Serverful: you run every layer",
+        "focus": [
+          "c1",
+          "fw",
+          "nginx",
+          "gw",
+          "app1",
+          "app2",
+          "db1"
+        ],
+        "note": "Each box is software someone must install, configure, patch, monitor and scale."
+      },
+      {
+        "id": "serverless",
+        "label": "Serverless on Vercel",
+        "focus": [
+          "c2",
+          "vedge",
+          "fn",
+          "db2"
+        ],
+        "note": "The same jobs still happen, but Vercel runs them. TPS ships only application code."
+      },
+      {
+        "id": "abstraction",
+        "label": "What Vercel replaces",
+        "focus": [
+          "fw",
+          "nginx",
+          "gw",
+          "app1",
+          "app2",
+          "vedge",
+          "fn"
+        ],
+        "note": "Firewall, proxy and gateway collapse into Vercel's edge; containers become auto-scaled functions."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "c1",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "browser",
+      "icon": "person",
+      "pos": [
+        40,
+        120
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "fw",
+      "type": "security",
+      "label": "Firewall",
+      "sublabel": "cloud firewall / WAF",
+      "tag": "rules, DDoS, rate limit",
+      "pos": [
+        250,
+        120
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "explanation": "Filters traffic before it reaches the server: open ports, IP rules, rate limits, web attack rules. On a VPS you choose, configure and update it yourself or buy a separate service."
+    },
+    {
+      "id": "nginx",
+      "type": "cloud",
+      "label": "Nginx",
+      "sublabel": "reverse proxy · TLS · :443",
+      "tag": "load balances",
+      "pos": [
+        490,
+        120
+      ],
+      "size": [
+        180,
+        64
+      ],
+      "explanation": "Terminates HTTPS (certificates must be renewed), serves or caches static files, and spreads requests across the app containers. Config, restarts and upgrades are your job."
+    },
+    {
+      "id": "gw",
+      "type": "cloud",
+      "label": "API gateway",
+      "sublabel": "Amazon API Gateway or custom",
+      "tag": "auth, routing, quotas",
+      "pos": [
+        740,
+        120
+      ],
+      "size": [
+        200,
+        64
+      ],
+      "explanation": "Routes each API path to the right service and applies authentication, quotas and request validation. Either a managed product such as Amazon API Gateway (billed separately) or custom code you maintain."
+    },
+    {
+      "id": "app1",
+      "type": "backend",
+      "label": "App container 1",
+      "sublabel": "Node.js · localhost:3000",
+      "pos": [
+        1010,
+        40
+      ],
+      "size": [
+        190,
+        60
+      ],
+      "explanation": "One copy of the application running in Docker. Two or more copies are needed so one can restart or fail without taking the site down."
+    },
+    {
+      "id": "app2",
+      "type": "backend",
+      "label": "App container 2",
+      "sublabel": "Node.js · localhost:3001",
+      "pos": [
+        1010,
+        200
+      ],
+      "size": [
+        190,
+        60
+      ],
+      "explanation": "Second copy for redundancy and extra capacity. Adding a third means resizing the VPS or adding servers by hand, and you pay for the reserved CPU/RAM even when idle."
+    },
+    {
+      "id": "db1",
+      "type": "database",
+      "label": "Database",
+      "sublabel": "PostgreSQL on the VM",
+      "pos": [
+        1300,
+        120
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "explanation": "Self-hosted database: you handle backups, upgrades, disk space and failover."
+    },
+    {
+      "id": "c2",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "browser",
+      "icon": "person",
+      "pos": [
+        40,
+        480
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "vedge",
+      "type": "frontend",
+      "label": "Vercel edge network",
+      "sublabel": "firewall + TLS + routing + CDN, built in",
+      "brand": "vercel",
+      "pos": [
+        250,
+        480
+      ],
+      "size": [
+        690,
+        60
+      ],
+      "explanation": "One managed layer does the firewall (WAF), HTTPS certificates, caching, routing and load distribution. No servers, ports or certificates for TPS to manage. Cached pages are answered here without running any code."
+    },
+    {
+      "id": "fn",
+      "type": "frontend",
+      "label": "Vercel Functions",
+      "sublabel": "Fluid Compute · auto-scaled instances",
+      "tag": "1 vCPU / 2 GB proposed",
+      "brand": "vercel",
+      "pos": [
+        1010,
+        480
+      ],
+      "size": [
+        190,
+        64
+      ],
+      "explanation": "The application code (the form handler) runs here. Vercel starts more instances as traffic grows and fewer when it drops; concurrent requests can share an instance. Billed on active CPU, memory GB-hours and invocations, not on idle reserved capacity."
+    },
+    {
+      "id": "db2",
+      "type": "database",
+      "label": "Managed database",
+      "sublabel": "Neon / Supabase (optional)",
+      "pos": [
+        1300,
+        480
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "explanation": "Only if TPS needs its own records. The host handles backups, upgrades and scaling."
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "VPS you rent: you patch the OS, Docker, scaling and monitoring",
+      "wraps": [
+        "nginx",
+        "gw",
+        "app1",
+        "app2",
+        "db1"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Serverless: Vercel runs everything except your code",
+      "wraps": [
+        "vedge",
+        "fn"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "s1",
+      "from": "c1",
+      "to": "fw",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "s2",
+      "from": "fw",
+      "to": "nginx",
+      "label": "allowed"
+    },
+    {
+      "id": "s3",
+      "from": "nginx",
+      "to": "gw",
+      "label": "proxy"
+    },
+    {
+      "id": "s4",
+      "from": "gw",
+      "to": "app1"
+    },
+    {
+      "id": "s5",
+      "from": "gw",
+      "to": "app2"
+    },
+    {
+      "id": "s6",
+      "from": "app1",
+      "to": "db1",
+      "label": "SQL"
+    },
+    {
+      "id": "s7",
+      "from": "app2",
+      "to": "db1",
+      "label": "SQL"
+    },
+    {
+      "id": "a1",
+      "from": "fw",
+      "to": "vedge",
+      "label": "abstracted",
+      "variant": "dashed"
+    },
+    {
+      "id": "a2",
+      "from": "nginx",
+      "to": "vedge",
+      "label": "abstracted",
+      "variant": "dashed"
+    },
+    {
+      "id": "a3",
+      "from": "gw",
+      "to": "vedge",
+      "label": "abstracted",
+      "variant": "dashed"
+    },
+    {
+      "id": "a4",
+      "from": "app2",
+      "to": "fn",
+      "label": "becomes",
+      "variant": "dashed"
+    },
+    {
+      "id": "l1",
+      "from": "c2",
+      "to": "vedge",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "l2",
+      "from": "vedge",
+      "to": "fn",
+      "label": "dynamic only"
+    },
+    {
+      "id": "l3",
+      "from": "fn",
+      "to": "db2",
+      "label": "optional"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Serverful: you own",
+      "items": [
+        "Firewall rules, TLS certificates, Nginx config",
+        "Gateway, containers, restarts, OS patches",
+        "Capacity planning: reserved CPU/RAM billed even when idle"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Serverless: Vercel owns",
+      "items": [
+        "Edge firewall, certificates, routing, CDN",
+        "Starting and stopping instances as traffic changes",
+        "Billing: plan + measured CPU, memory, invocations"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "No universal winner",
+      "items": [
+        "Serverful can be cheaper under heavy, steady load",
+        "Serverless suits uneven, modest traffic like the TPS launch",
+        "Illustrative comparison, not a benchmark"
+      ]
+    }
+  ]
+}

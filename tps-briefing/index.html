@@ -1,0 +1,595 @@
+<title>TPS Infrastructure Briefing</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of numbered briefing sections; each section is a self-contained panel with diagram or live calculator plus assumptions. */
+:root {
+  --bg: #fafaf9; --panel: #ffffff; --ink: #1c1b19; --muted: #5f5d58; --line: #e4e2dd; --soft: #f2f1ee;
+  --vercel: #1c1b19; --cf: #e8711a; --cf-soft: #fdeedf; --db: #1f8a5b; --db-soft: #e2f3ea;
+  --warn: #b42318; --warn-soft: #fdecea; --ok: #1f8a5b; --accent: #3b4c63; --accent-soft: #e7ecf2;
+  --f-display: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151514; --panel: #1d1d1b; --ink: #ecebe7; --muted: #a9a69f; --line: #34332f; --soft: #262623;
+  --vercel: #ecebe7; --cf: #f59a4f; --cf-soft: #3a2616; --db: #4cc38a; --db-soft: #163126;
+  --warn: #f97066; --warn-soft: #3b1714; --ok: #4cc38a; --accent: #a9bbd3; --accent-soft: #252c36; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #151514; --panel: #1d1d1b; --ink: #ecebe7; --muted: #a9a69f; --line: #34332f; --soft: #262623;
+  --vercel: #ecebe7; --cf: #f59a4f; --cf-soft: #3a2616; --db: #4cc38a; --db-soft: #163126;
+  --warn: #f97066; --warn-soft: #3b1714; --ok: #4cc38a; --accent: #a9bbd3; --accent-soft: #252c36; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 64px }
+.wrap { max-width: 1080px; margin: 0 auto }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0 }
+h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 700; letter-spacing: -0.01em }
+h2 { font-size: clamp(22px, 3vw, 28px); font-weight: 600 }
+h3 { font-size: 16px; font-weight: 600 }
+p { margin: 0; max-width: 68ch }
+a { color: var(--accent) }
+.mono, td.n, .out b { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+header.top { padding-block: 48px 28px; display: grid; gap: 16px; border-bottom: 1px solid var(--line) }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600 }
+.lede { font-size: 17px; color: var(--muted) }
+.keys { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted) }
+.keys span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--c) }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px; padding-block: 18px }
+nav.toc a { font-size: 13px; text-decoration: none; color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; background: var(--panel) }
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--accent); outline: none }
+section.s { padding-block: 40px; border-bottom: 1px solid var(--line); display: grid; gap: 18px }
+.shead { display: grid; gap: 8px }
+.num { font-family: var(--f-mono); font-size: 13px; color: var(--muted) }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0 }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px }
+.frame { width: 100%; height: 860px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); display: block }
+.framebar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--muted) }
+ul.facts { margin: 0; padding-left: 18px; display: grid; gap: 6px }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; vertical-align: 2px }
+.tag.conf { background: var(--accent-soft); color: var(--accent) }
+.tag.prop { background: var(--cf-soft); color: var(--cf) }
+.tag.ill { background: var(--soft); color: var(--muted); border: 1px dashed var(--line) }
+.note { font-size: 13px; color: var(--muted) }
+.callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; font-size: 14px }
+/* controls */
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 20px }
+.ctl { display: grid; gap: 4px; min-width: 0 }
+.ctl label { font-size: 13px; font-weight: 500; display: flex; justify-content: space-between; gap: 8px }
+.ctl label output { font-family: var(--f-mono); color: var(--accent); font-weight: 500 }
+input[type=range] { width: 100%; accent-color: var(--accent) }
+input[type=number], select { font: inherit; font-family: var(--f-mono); font-size: 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); width: 100% }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.seg { display: flex; flex-wrap: wrap; gap: 4px }
+.seg button { font: inherit; font-size: 13px; font-family: var(--f-mono); padding: 5px 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; cursor: pointer }
+.seg button[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--bg) }
+.outs { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px }
+.out { background: var(--soft); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0 }
+.out span { font-size: 12px; color: var(--muted) }
+.out b { font-size: 18px; font-weight: 500; overflow-wrap: anywhere }
+.out.hi { background: var(--accent-soft) }
+.warnbox { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 8px 12px; font-size: 14px; font-weight: 500 }
+.okbox { background: var(--db-soft); color: var(--db); border-radius: 8px; padding: 8px 12px; font-size: 14px; font-weight: 500 }
+.tablewrap { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 14px }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600 }
+td.n, th.n { text-align: right; white-space: nowrap }
+tr.total td { font-weight: 600; border-top: 2px solid var(--ink) }
+svg text { font-family: var(--f-body) }
+.bar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line) }
+.bar > div { display: flex; align-items: center; padding: 0 10px; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden }
+.meter { height: 14px; background: var(--soft); border-radius: 7px; overflow: hidden; position: relative }
+.meter i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 7px }
+.meter.over i { background: var(--warn) }
+.stack { display: grid; gap: 4px }
+.stack div { border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font-size: 13px; text-align: center; background: var(--panel) }
+.stack .mgd { background: var(--soft); color: var(--muted); border-style: dashed }
+.stack .app { background: var(--accent-soft); border-color: var(--accent); font-weight: 600 }
+button.copy { font: inherit; font-size: 14px; font-weight: 500; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--bg); cursor: pointer }
+pre.summary { font-family: var(--f-mono); font-size: 12.5px; background: var(--soft); border-radius: 8px; padding: 12px; white-space: pre-wrap; margin: 0; overflow-x: auto }
+ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+@media (max-width: 600px) { .frame { height: 620px } }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Architecture briefing · public website launch</div>
+  <h1>TPS Infrastructure Briefing</h1>
+  <p class="lede">How the new TPS website is built, who owns each part, and what it is likely to cost each month. This covers the public website launch only, not the future CRM.</p>
+  <div class="keys">
+    <span style="--c: var(--vercel)">Vercel (website + form handler)</span>
+    <span style="--c: var(--cf)">Cloudflare (media, bot check)</span>
+    <span style="--c: var(--db)">Database (optional)</span>
+  </div>
+  <p class="note"><span class="tag conf">Confirmed</span> agreed scope &nbsp; <span class="tag prop">Proposed</span> recommended configuration awaiting approval &nbsp; <span class="tag ill">Illustrative</span> modelled figures, not measured. Provider rates on this page come from planning and have not been re-checked against current price lists (see section 11).</p>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#launch">1 Launch architecture</a><a href="#ownership">2 Ownership</a><a href="#serverless">3 Serverful vs serverless</a>
+  <a href="#fluid">4 Compute timeline</a><a href="#storage">5 Media storage</a><a href="#bandwidth">6 Bandwidth + R2</a>
+  <a href="#compute">7 Compute cost</a><a href="#forms">8 Forms + bookings</a><a href="#database">9 Database</a>
+  <a href="#costs">10 Monthly cost</a><a href="#verify">11 Verify + approve</a>
+</nav>
+
+<!-- 1 -->
+<section class="s" id="launch">
+  <div class="shead"><span class="num">01</span><h2>Launch architecture</h2>
+  <p>Visitors reach three separate services: Vercel for the website pages and the consultation form, Cloudflare for photos and videos, and SimplyBook for treatment bookings. Most page views are served from cache and run no application code at all.</p></div>
+  <div class="framebar"><span>Interactive: pick a guided view (pages, media, enquiry, booking, database), click a box and choose Explain for detail, or click Cloudflare or the form boxes to open their detail diagrams.</span><a href="diagrams/launch.html" target="_blank" rel="noopener">Open full screen</a></div>
+  <iframe class="frame" src="diagrams/launch.html" title="TPS launch architecture diagram" loading="lazy"></iframe>
+  <div class="grid3">
+    <div class="panel"><h3><span class="tag conf">Confirmed</span></h3><ul class="facts">
+      <li>Next.js static pages served by Vercel's edge network</li>
+      <li>Media in Cloudflare R2: videos 143.15 MB, images 27 MB</li>
+      <li>Browsers load media from direct URLs, never through the TPS API</li>
+      <li>No separate NestJS server is needed for this scope</li></ul></div>
+    <div class="panel"><h3><span class="tag prop">Proposed</span></h3><ul class="facts">
+      <li>Vercel Standard functions: 1 vCPU / 2 GB per instance</li>
+      <li>London region (illustrative)</li>
+      <li>Database only if TPS needs to keep its own records; then one provider, Neon or Supabase</li></ul></div>
+    <div class="panel"><h3><span class="tag ill">To confirm</span></h3><ul class="facts">
+      <li>SimplyBook as a link or an embed</li>
+      <li>Zoho through our form handler, or Zoho's own hosted form/link</li>
+      <li>Zoho integration and authentication method, before implementation</li></ul></div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="s" id="ownership">
+  <div class="shead"><span class="num">02</span><h2>Who owns what</h2>
+  <p>TPS owns the domain, every provider account, the production data and the billing. The developer works inside those accounts with role-based access. Think of a house: TPS owns the land and pays for materials and utilities, and the developer builds and maintains it under contract.</p></div>
+  <div class="framebar"><span>Ownership and access diagram</span><a href="diagrams/ownership.html" target="_blank" rel="noopener">Open full screen</a></div>
+  <iframe class="frame" src="diagrams/ownership.html" title="Ownership diagram" loading="lazy"></iframe>
+  <div class="tablewrap panel"><table>
+    <thead><tr><th>Cost type</th><th>Who bills TPS</th><th>Covers</th></tr></thead>
+    <tbody>
+      <tr><td>Provider fees</td><td>Vercel, Cloudflare, database host, directly</td><td>Hosting, storage, compute and plan subscriptions</td></tr>
+      <tr><td>Maintenance fees</td><td>Developer</td><td>Operations support within the agreed maintenance scope</td></tr>
+      <tr><td>New development</td><td>Developer, quoted separately</td><td>New features or changes outside maintenance</td></tr>
+    </tbody></table>
+    <p class="note" style="margin-top:10px">The developer does not resell hosting. Reselling would need a separate commercial agreement with its own support and liability terms.</p></div>
+</section>
+
+<!-- 3 -->
+<section class="s" id="serverless">
+  <div class="shead"><span class="num">03</span><h2>Rented server vs serverless</h2>
+  <p>A rented server (VPS) is a machine of fixed size that is billed whether or not anyone visits. Serverless means the provider runs the operating system and scaling, and bills a plan fee plus what is actually used. Neither is always cheaper: under heavy, steady load a VPS can cost less.</p></div>
+  <div class="framebar"><span>The same request on a rented server (top) and on Vercel (bottom). Dashed arrows show which pieces Vercel absorbs.</span><a href="diagrams/serverful.html" target="_blank" rel="noopener">Open full screen</a></div>
+  <iframe class="frame" src="diagrams/serverful.html" title="Serverful vs serverless architecture diagram" loading="lazy"></iframe>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:10px"><h3>VPS (serverful)</h3>
+      <div class="stack"><div class="app">Application</div><div>Runtime (Node.js)</div><div>Reverse proxy (TLS, routing)</div><div>Operating system + patches</div><div>Allocated CPU / RAM</div></div>
+      <p class="note">Developer maintains every layer. Billed for reserved capacity, even when idle.</p></div>
+    <div class="panel" style="display:grid;gap:10px"><h3>Serverless (proposed)</h3>
+      <div class="stack"><div class="app">Application functions</div><div class="mgd">Runtime: provider-managed</div><div class="mgd">Scaling: provider-managed</div><div class="mgd">Operating system: provider-managed</div><div class="mgd">Hardware: provider-managed</div></div>
+      <p class="note">Developer maintains the application. Billed as plan + measured CPU, memory and invocations.</p></div>
+  </div>
+  <div class="panel" style="display:grid;gap:8px">
+    <h3>Capacity paid for vs demand over one day <span class="tag ill">Illustrative, not measured</span></h3>
+    <div class="tablewrap"><svg id="capchart" viewBox="0 0 760 260" width="100%" role="img" aria-label="Illustrative chart: a flat VPS capacity line sits above a fluctuating demand curve; serverless billing follows the demand curve."></svg></div>
+    <p class="note">The gap between the flat line and the curve is capacity a VPS bills for but nobody uses. At sustained high demand that gap closes, and the per-unit serverless rate can make it the more expensive option.</p>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="s" id="fluid">
+  <div class="shead"><span class="num">04</span><h2>What one form submission costs to run</h2>
+  <p>A form submission takes about half a second, but the processor is busy for only a fraction of it. The rest is waiting for Cloudflare and Zoho to answer. With Vercel Fluid Compute, CPU is billed only while it is active, and other requests can use the same instance while one waits.</p></div>
+  <div class="framebar"><span>Billing waterfall: one instance handling two form submissions at once. Purple = CPU billed, orange = waiting (not billed).</span><a href="diagrams/fluid.html" target="_blank" rel="noopener">Open full screen</a></div>
+  <iframe class="frame" src="diagrams/fluid.html" title="Fluid Compute billing waterfall" loading="lazy" style="height:900px"></iframe>
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>500 ms request timeline <span class="tag ill">Illustrative</span></h3>
+    <div class="tablewrap"><svg id="timeline" viewBox="0 0 760 250" width="100%" role="img" aria-label="Timeline of a 500 ms request: three 10 ms CPU slices totalling 30 ms, 470 ms waiting on external services, and 2 GB memory allocated for the full 500 ms."></svg></div>
+    <div class="outs">
+      <div class="out"><span>Active CPU</span><b>30 ms</b></div>
+      <div class="out"><span>Waiting on I/O</span><b>470 ms</b></div>
+      <div class="out"><span>CPU-hours billed</span><b>0.00000833</b></div>
+      <div class="out"><span>Memory GB-hours (2 GB × 0.5 s)</span><b>0.000278</b></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel"><ul class="facts">
+      <li>CPU is billed in accumulated CPU-hours. A request is not rounded up to an hour.</li>
+      <li>Memory is billed in GB-hours for the time it is allocated; invocations are counted separately.</li>
+      <li>Concurrent requests can share one instance's memory, so real memory usage can be lower than this one-request view.</li></ul></div>
+    <div class="panel"><ul class="facts">
+      <li><span class="tag prop">Proposed</span> Standard: 1 vCPU / 2 GB as the starting point.</li>
+      <li>Performance: 2 vCPU / 4 GB as an alternative, subject to provider configuration.</li>
+      <li>These are allocations, not measured utilisation.</li></ul></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="s" id="storage">
+  <div class="shead"><span class="num">05</span><h2>Why media lives in object storage, not the database</h2>
+  <p>Photos and videos could be stored inside the database, but every uncached view would then push the whole file through the application and database. Keeping media in R2 behind Cloudflare's CDN takes those bytes off the TPS application path.</p></div>
+  <div class="framebar"><span>Path A vs path B</span><a href="diagrams/media.html" target="_blank" rel="noopener">Open full screen</a></div>
+  <iframe class="frame" src="diagrams/media.html" title="Database-backed vs direct object media delivery" loading="lazy"></iframe>
+  <div class="panel" style="display:grid;gap:14px">
+    <h3>Memory buffer simulator (path A)</h3>
+    <div class="controls">
+      <div class="ctl"><label for="mb-conc">Concurrent requests <output id="mb-conc-o"></output></label><input type="range" id="mb-conc" min="10" max="1000" step="10" value="100"></div>
+      <div class="ctl"><label for="mb-size">File size (MB) <output id="mb-size-o"></output></label><input type="range" id="mb-size" min="1" max="20" step="1" value="2"></div>
+    </div>
+    <div class="outs"><div class="out hi"><span>Buffered in memory</span><b id="mb-out"></b></div><div class="out"><span>Share of 2,000 MB instance</span><b id="mb-pct"></b></div></div>
+    <div class="meter" id="mb-meter"><i></i></div>
+    <div id="mb-msg"></div>
+    <p class="note">Formula: concurrent requests × file size. Assumes every file is fully buffered in one instance. Streaming, how requests spread across instances, and runtime overhead all change real memory use. Example: 100 × 2 MB = 200 MB. A 2 MB image is 1,000× the payload of a 2 KB record; that is a size ratio, not a CPU or latency ratio.</p>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="s" id="bandwidth">
+  <div class="shead"><span class="num">06</span><h2>Media bandwidth</h2>
+  <p>The media library is 170.15 MB. How much is delivered each month depends on how many visitors there are and how much of the library each one actually loads. Most of it should come from Cloudflare's cache; only misses reach R2. At the default settings, delivering about 1.6 TB a month through Cloudflare costs $0 in egress.</p></div>
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>Media library</h3>
+    <div class="bar" role="img" aria-label="Videos 143.15 MB, 84.13 percent; images 27 MB, 15.87 percent">
+      <div style="width:84.13%;background:var(--cf);color:var(--bg)">Videos 143.15 MB · 84.13%</div>
+      <div style="width:15.87%;background:var(--cf-soft);color:var(--cf)" title="Images 27 MB · 15.87%">Images 27 MB</div>
+    </div>
+    <p class="note">Total 170.15 MB (decimal: 1 GB = 1,000 MB).</p>
+  </div>
+  <div class="panel" style="display:grid;gap:14px">
+    <h3>Bandwidth simulator <span class="tag ill">Illustrative</span></h3>
+    <div class="controls">
+      <div class="ctl"><label>Monthly visitors</label><div class="seg" id="bw-vis" data-values="10000,25000,50000" data-default="50000"></div></div>
+      <div class="ctl"><label for="bw-video">Video library loaded per visitor <output id="bw-video-o"></output></label><input type="range" id="bw-video" min="0" max="100" step="1" value="15"></div>
+      <div class="ctl"><label for="bw-image">Image library loaded per visitor <output id="bw-image-o"></output></label><input type="range" id="bw-image" min="0" max="100" step="1" value="40"></div>
+      <div class="ctl"><label for="bw-hit">CDN byte hit rate <output id="bw-hit-o"></output></label><input type="range" id="bw-hit" min="0" max="100" step="1" value="90"></div>
+    </div>
+    <div class="outs">
+      <div class="out"><span>Per visitor</span><b id="bw-pv"></b></div>
+      <div class="out"><span>Video delivered</span><b id="bw-vgb"></b></div>
+      <div class="out"><span>Images delivered</span><b id="bw-igb"></b></div>
+      <div class="out hi"><span>Total delivered</span><b id="bw-tot"></b></div>
+      <div class="out"><span>From CDN cache</span><b id="bw-cache"></b></div>
+      <div class="out"><span>From R2 origin</span><b id="bw-origin"></b></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Scenario: full library once per visitor</th><th class="n">10,000</th><th class="n">25,000</th><th class="n">50,000</th></tr></thead>
+      <tbody><tr><td>Delivered per month</td><td class="n">1,701.5 GB</td><td class="n">4,253.75 GB</td><td class="n">8,507.5 GB</td></tr>
+      <tr><td>Your current percentages</td><td class="n" id="bw-s1"></td><td class="n" id="bw-s2"></td><td class="n" id="bw-s3"></td></tr></tbody></table></div>
+    <h3>What this bandwidth costs</h3>
+    <div class="controls">
+      <div class="ctl"><label for="bw-r2egress">R2 internet egress ($/GB)</label><input type="number" id="bw-r2egress" min="0" step="0.01" value="0"></div>
+      <div class="ctl"><label for="bw-cfplan">Cloudflare CDN plan fee ($/month)</label><input type="number" id="bw-cfplan" min="0" step="1" value="0"></div>
+      <div class="ctl"><label for="bw-vincl">Vercel included transfer (GB) <span class="tag ill">compare</span></label><input type="number" id="bw-vincl" min="0" step="100" value="1000"></div>
+      <div class="ctl"><label for="bw-vrate">Vercel transfer overage ($/GB) <span class="tag ill">compare</span></label><input type="number" id="bw-vrate" min="0" step="0.01" value="0.15"></div>
+    </div>
+    <div class="outs">
+      <div class="out"><span>R2 egress on origin traffic</span><b id="bw-c-egress"></b></div>
+      <div class="out"><span>R2 storage + operations (below)</span><b id="bw-c-ops"></b></div>
+      <div class="out hi"><span>Media delivery via Cloudflare / month</span><b id="bw-c-cf"></b></div>
+      <div class="out"><span>Same media served through Vercel (comparison)</span><b id="bw-c-v"></b></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Monthly price at your current percentages</th><th class="n">10,000</th><th class="n">25,000</th><th class="n">50,000</th></tr></thead>
+      <tbody>
+        <tr><td>Media delivered</td><td class="n" id="bw-p-gb1"></td><td class="n" id="bw-p-gb2"></td><td class="n" id="bw-p-gb3"></td></tr>
+        <tr><td>Via Cloudflare R2 + CDN (TPS design)</td><td class="n" id="bw-p-cf1"></td><td class="n" id="bw-p-cf2"></td><td class="n" id="bw-p-cf3"></td></tr>
+        <tr><td>Through Vercel instead (comparison)</td><td class="n" id="bw-p-v1"></td><td class="n" id="bw-p-v2"></td><td class="n" id="bw-p-v3"></td></tr>
+      </tbody></table></div>
+    <p class="note">R2 egress is $0 under the pricing used in planning; the input lets you test other terms. The Vercel comparison rates (1,000 GB included, $0.15/GB after) are added for illustration only, are not from the planning figures, vary by region, and must be checked on Vercel's pricing page. Cloudflare video delivery terms and plan limits still need confirming.</p>
+    <ul class="facts note">
+      <li>"Full library once" is not a maximum: repeat visits and re-downloads add more. Browser caching, partial video playback and range requests lower real usage.</li>
+      <li>R2 charges $0 for direct internet egress under the pricing used here. CDN and video delivery terms and other services may still apply; confirm them.</li>
+      <li>Keep bandwidth down with compressed video, poster images and careful preload settings, and make sure media does not pass through Vercel's image optimisation by accident.</li></ul>
+  </div>
+  <div class="panel" style="display:grid;gap:14px">
+    <h3>R2 storage and operations cost <span class="tag ill">Illustrative rates</span></h3>
+    <div class="controls">
+      <div class="ctl"><label for="r2-gb">Storage (GB)</label><input type="number" id="r2-gb" min="0" step="0.01" value="0.17015"></div>
+      <div class="ctl"><label for="r2-a">Class A operations / month (writes)</label><input type="number" id="r2-a" min="0" step="1000" value="1000"></div>
+      <div class="ctl"><label for="r2-b">Class B operations / month (reads)</label><input type="number" id="r2-b" min="0" step="1000" value="100000"></div>
+    </div>
+    <div class="outs"><div class="out"><span>Storage over 10 GB free</span><b id="r2-cs"></b></div><div class="out"><span>Class A over 1M free</span><b id="r2-ca"></b></div><div class="out"><span>Class B over 10M free</span><b id="r2-cb"></b></div><div class="out hi"><span>Estimated R2 / month</span><b id="r2-tot"></b></div></div>
+    <p class="note">Rates: $0.015 per GB-month, $4.50 per million Class A, $0.36 per million Class B, Standard storage only. Provider rounding may differ. The byte hit rate above says nothing about request counts, so operation counts are entered separately here.</p>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="s" id="compute">
+  <div class="shead"><span class="num">07</span><h2>Compute cost</h2>
+  <p>Only form submissions and any other dynamic requests run functions; cached pages do not. Even at 50,000 visitors, compute at these settings costs about a cent and a half a month.</p></div>
+  <div class="panel" style="display:grid;gap:14px">
+    <h3>Compute simulator <span class="tag ill">Illustrative, no benchmarks</span></h3>
+    <div class="controls">
+      <div class="ctl"><label>Monthly visitors</label><div class="seg" id="cp-vis" data-values="10000,25000,50000" data-default="50000"></div></div>
+      <div class="ctl"><label for="cp-rate">Visitors who submit a form <output id="cp-rate-o"></output></label><input type="range" id="cp-rate" min="0" max="30" step="1" value="5"></div>
+      <div class="ctl"><label>Other dynamic calls per visitor</label><div class="seg" id="cp-extra" data-values="0,1,3,5,10" data-default="0"></div></div>
+      <div class="ctl"><label for="cp-cpu">Active CPU per call (ms) <output id="cp-cpu-o"></output></label><input type="range" id="cp-cpu" min="10" max="500" step="10" value="30"></div>
+      <div class="ctl"><label for="cp-dur">Duration per call (ms) <output id="cp-dur-o"></output></label><input type="range" id="cp-dur" min="100" max="3000" step="50" value="500"></div>
+      <div class="ctl"><label>Memory per instance</label><div class="seg" id="cp-ram" data-values="2,4" data-default="2" data-suffix=" GB"></div></div>
+      <div class="ctl"><label for="cp-allow">Included invocations / month</label><input type="number" id="cp-allow" min="0" step="100000" value="1000000"></div>
+    </div>
+    <div id="cp-msg"></div>
+    <div class="outs">
+      <div class="out"><span>Form submissions</span><b id="cp-forms"></b></div>
+      <div class="out"><span>Invocations</span><b id="cp-inv"></b></div>
+      <div class="out"><span>CPU-hours</span><b id="cp-cpuh"></b></div>
+      <div class="out"><span>Memory GB-hours</span><b id="cp-gbh"></b></div>
+      <div class="out"><span>CPU cost ($0.177/h)</span><b id="cp-cpuc"></b></div>
+      <div class="out"><span>Memory cost ($0.0146/GB-h)</span><b id="cp-memc"></b></div>
+      <div class="out"><span>Raw invocation cost ($0.60/M)</span><b id="cp-invraw"></b></div>
+      <div class="out hi"><span>Raw total before credits</span><b id="cp-raw"></b></div>
+      <div class="out"><span>Invocation overage after allowance</span><b id="cp-invover"></b></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="n">Monthly visitors</th><th class="n">Forms / invocations</th><th class="n">CPU hours</th><th class="n">GB-hours</th><th class="n">CPU + memory USD</th></tr></thead>
+      <tbody id="cp-table"></tbody></table></div>
+    <p class="note">The table uses your current settings for each traffic level; at the defaults it matches the planning figures (500 / 1,250 / 2,500 invocations). Memory assumes requests never overlap; real instance sharing can lower it. Not modelled: cold starts, retries, bots, server-side rendering, middleware and other overhead. CPU is capped at duration in this single-core model. The Vercel usage credit is applied in section 10.</p>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="s" id="forms">
+  <div class="shead"><span class="num">08</span><h2>Consultation form and bookings</h2>
+  <p>Before an enquiry reaches Zoho, the TPS handler asks Cloudflare whether the visitor passed the Turnstile bot check. Failed checks are rejected and nothing is sent on. Treatment bookings go straight to SimplyBook, which handles confirmation.</p></div>
+  <div class="framebar"><span>Turnstile sequence</span><a href="diagrams/turnstile.html" target="_blank" rel="noopener">Open full screen</a></div>
+  <iframe class="frame" src="diagrams/turnstile.html" title="Turnstile and Zoho sequence diagram" loading="lazy"></iframe>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:10px"><h3>Alternative if Zoho hosts the form</h3>
+      <div class="tablewrap"><svg viewBox="0 0 460 70" width="100%" role="img" aria-label="Browser goes directly to Zoho hosted form, then Zoho">
+        <g font-size="13"><rect x="2" y="15" width="110" height="40" rx="6" fill="var(--soft)" stroke="var(--line)"/><text x="57" y="40" text-anchor="middle" fill="var(--ink)">Browser</text>
+        <rect x="175" y="15" width="130" height="40" rx="6" fill="var(--soft)" stroke="var(--line)"/><text x="240" y="40" text-anchor="middle" fill="var(--ink)">Zoho hosted form</text>
+        <rect x="368" y="15" width="90" height="40" rx="6" fill="var(--soft)" stroke="var(--line)"/><text x="413" y="40" text-anchor="middle" fill="var(--ink)">Zoho CRM</text>
+        <path d="M112 35H170M305 35H363" stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ah)"/></g>
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs></svg></div>
+      <p class="note">No TPS handler runs. Confirm which bot protection Zoho's form offers.</p></div>
+    <div class="panel" style="display:grid;gap:10px"><h3>SimplyBook booking flow</h3>
+      <div class="tablewrap"><svg viewBox="0 0 460 70" width="100%" role="img" aria-label="Browser, treatment selection, SimplyBook, confirmation by provider">
+        <g font-size="12.5"><rect x="2" y="15" width="90" height="40" rx="6" fill="var(--soft)" stroke="var(--line)"/><text x="47" y="40" text-anchor="middle" fill="var(--ink)">Browser</text>
+        <rect x="120" y="15" width="100" height="40" rx="6" fill="var(--soft)" stroke="var(--line)"/><text x="170" y="40" text-anchor="middle" fill="var(--ink)">Treatment</text>
+        <rect x="248" y="15" width="96" height="40" rx="6" fill="var(--soft)" stroke="var(--line)"/><text x="296" y="40" text-anchor="middle" fill="var(--ink)">SimplyBook</text>
+        <rect x="372" y="15" width="86" height="40" rx="6" fill="var(--soft)" stroke="var(--line)"/><text x="415" y="40" text-anchor="middle" fill="var(--ink)">Confirmation</text>
+        <path d="M92 35H115M220 35H243M344 35H367" stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ah)"/></g></svg></div>
+      <p class="note">Booking data stays with SimplyBook; the website stores no bookings.</p></div>
+  </div>
+  <div class="callout">Turnstile is a bot check, not a login and not complete DDoS protection. The handler also needs rate limits and input validation, and the Turnstile secret key stays on the server.</div>
+</section>
+
+<!-- 9 -->
+<section class="s" id="database">
+  <div class="shead"><span class="num">09</span><h2>Do we need a database?</h2>
+  <p>Not for launch if Zoho and SimplyBook keep all the records and the site has no logins. If TPS wants its own copy of enquiries or other records, add PostgreSQL. PostgreSQL is the database engine, Neon and Supabase are two companies that host it, and Prisma is the code library the website uses to talk to it.</p></div>
+  <div class="tablewrap panel"><table>
+    <thead><tr><th></th><th>Neon</th><th>Supabase</th></tr></thead>
+    <tbody>
+      <tr><td>What it is</td><td>Hosted PostgreSQL</td><td>Hosted PostgreSQL plus a platform</td></tr>
+      <tr><td>Strengths</td><td>Elastic compute, scales to zero when idle, database branching</td><td>Built-in authentication, file storage and realtime features</td></tr>
+      <tr><td>Fits TPS when</td><td>Only PostgreSQL is needed (recommended)</td><td>Those extra platform features are needed later</td></tr>
+      <tr><td>Check before choosing</td><td colspan="2">Region, connection pooling, backups, support and privacy requirements</td></tr>
+    </tbody></table></div>
+  <div class="panel" style="display:grid;gap:14px">
+    <h3>Neon usage simulator <span class="tag ill">Illustrative rates</span></h3>
+    <div class="controls">
+      <div class="ctl"><label for="db-hours">Hours running per month <output id="db-hours-o"></output></label><input type="range" id="db-hours" min="0" max="744" step="1" value="120"></div>
+      <div class="ctl"><label>Average compute units (CU)</label><div class="seg" id="db-cu" data-values="0.25,0.5,1,2" data-default="0.25"></div></div>
+      <div class="ctl"><label for="db-gb">Storage (GB) <output id="db-gb-o"></output></label><input type="range" id="db-gb" min="0.1" max="5" step="0.1" value="0.1"></div>
+    </div>
+    <div class="outs">
+      <div class="out"><span>CU-hours</span><b id="db-cuh"></b></div>
+      <div class="out"><span>Approx. RAM</span><b id="db-ram"></b></div>
+      <div class="out hi"><span>Paid-plan equivalent</span><b id="db-cost"></b></div>
+    </div>
+    <div id="db-free"></div>
+    <p class="note">Paid estimate = CU-hours × $0.106 + storage × $0.35. RAM ≈ CU × 4 GB. Running time includes the idle period before the database suspends. Free-tier check (≤100 CU-hours and ≤1 GB) is illustrative; verify the current plan and all its limits, and note free tiers can have operational limitations. Supabase Pro is about $25/month (illustrative).</p>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="s" id="costs">
+  <div class="shead"><span class="num">10</span><h2>Monthly cost estimate</h2>
+  <p>The likely monthly provider bill is the Vercel plan seat, since usage at launch traffic fits inside the included credit. Compute and R2 figures come live from sections 6 and 7. These are estimates, not invoices.</p></div>
+  <div class="panel" style="display:grid;gap:14px">
+    <div class="controls">
+      <div class="ctl"><label for="c-seats">Vercel paid seats</label><input type="number" id="c-seats" min="1" step="1" value="1"></div>
+      <div class="ctl"><label for="c-db">Database</label><select id="c-db"><option value="none">None</option><option value="neonfree">Neon Free</option><option value="neonpaid">Neon paid</option><option value="supa">Supabase Pro ($25)</option></select></div>
+      <div class="ctl" id="c-neon-wrap" hidden><label for="c-neon">Neon paid usage (USD)</label><input type="number" id="c-neon" min="0" step="0.5" value="15"><button type="button" class="seg" id="c-neon-sim" style="font:inherit;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:4px 8px;cursor:pointer;justify-self:start">Use section 9 estimate</button></div>
+      <div class="ctl"><label for="c-other">Other metered Vercel usage (USD)</label><input type="number" id="c-other" min="0" step="0.5" value="0"></div>
+      <div class="ctl"><label for="c-credit">Vercel usage credit (USD)</label><input type="number" id="c-credit" min="0" step="1" value="20"></div>
+      <div class="ctl"><label for="c-extra">Other optional costs (USD)</label><input type="number" id="c-extra" min="0" step="1" value="0"></div>
+      <div class="ctl"><label for="c-cont">Contingency (USD)</label><input type="number" id="c-cont" min="0" step="1" value="0"></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Item</th><th>Basis</th><th class="n">USD / month</th></tr></thead>
+      <tbody id="c-rows"></tbody></table></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button type="button" class="copy" id="c-copy">Copy summary</button><span class="note" id="c-copy-msg" aria-live="polite"></span></div>
+    <pre class="summary" id="c-summary"></pre>
+  </div>
+  <div class="tablewrap panel"><table>
+    <thead><tr><th>Reference scenario (1 seat, default usage)</th><th class="n">USD / month</th></tr></thead>
+    <tbody><tr><td>No database</td><td class="n">$20</td></tr><tr><td>Neon Free (if eligible)</td><td class="n">$20</td></tr><tr><td>Neon paid, illustrative $15 usage</td><td class="n">$35</td></tr><tr><td>Supabase Pro, illustrative</td><td class="n">$45</td></tr></tbody></table>
+    <p class="note" style="margin-top:10px">Not included: taxes, domain renewal, SimplyBook and Zoho subscriptions, engineering fees, unmodelled CDN, edge, transfer or image optimisation charges, backup or history retention, and support plans. The usage credit applies only to eligible usage; check plan allowances so nothing is counted twice. Use the contingency line for a buffer instead of treating any figure as a cap.</p></div>
+</section>
+
+<!-- 11 -->
+<section class="s" id="verify">
+  <div class="shead"><span class="num">11</span><h2>Verify and approve</h2>
+  <p>The rates on this page were carried forward from planning and have not been re-checked. Before final sign-off, they should be confirmed against the providers' current pages.</p></div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:8px"><h3>Official pricing references</h3><ul class="facts">
+      <li><a href="https://vercel.com/pricing" target="_blank" rel="noopener">Vercel pricing</a></li>
+      <li><a href="https://vercel.com/docs/functions/usage-and-pricing" target="_blank" rel="noopener">Vercel Functions usage and pricing</a></li>
+      <li><a href="https://vercel.com/docs/pricing/regional-pricing" target="_blank" rel="noopener">Vercel regional pricing</a></li>
+      <li><a href="https://developers.cloudflare.com/r2/pricing/" target="_blank" rel="noopener">Cloudflare R2 pricing</a></li>
+      <li><a href="https://developers.cloudflare.com/turnstile/" target="_blank" rel="noopener">Cloudflare Turnstile</a></li>
+      <li><a href="https://neon.com/pricing" target="_blank" rel="noopener">Neon pricing</a></li>
+      <li><a href="https://supabase.com/pricing" target="_blank" rel="noopener">Supabase pricing</a></li></ul></div>
+    <div class="panel" style="display:grid;gap:8px"><h3>Still to confirm</h3><ul class="facts">
+      <li>Video delivery terms on Cloudflare</li><li>Hosting region</li><li>Zoho and SimplyBook integration and authentication</li>
+      <li>Real peak concurrency and cache behaviour</li><li>Provider plans and the traffic period used (monthly visitors is an assumption)</li></ul></div>
+  </div>
+  <div class="panel" style="display:grid;gap:8px"><h3>Decisions TPS needs to approve</h3>
+    <ol class="check"><li>Account ownership: all provider accounts and the domain registered to TPS</li><li>Provider selection: Vercel, Cloudflare R2 + Turnstile, and a database host only if needed</li><li>Monthly budget, including a contingency</li><li>Maintenance scope, and how new development is quoted</li><li>Developer access: role-based, removable by TPS at any time</li><li>Data protection: where enquiry data is stored and who can see it</li></ol></div>
+</section>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const n = (v, d) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: 0 });
+  const usd = (v) => (Math.abs(v) > 0 && Math.abs(v) < 0.01 ? '$' + v.toFixed(6) : '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const num = (id) => { const v = parseFloat($(id).value); return isFinite(v) && v >= 0 ? v : 0; };
+  const gbFmt = (gb) => gb >= 1000 ? n(gb, 2) + ' GB (' + n(gb / 1000, 3) + ' TB)' : n(gb, 4) + ' GB';
+
+  // segmented controls
+  const segVal = {};
+  document.querySelectorAll('.seg[data-values]').forEach((el) => {
+    const vals = el.dataset.values.split(',');
+    const suf = el.dataset.suffix || '';
+    segVal[el.id] = parseFloat(el.dataset.default);
+    vals.forEach((v) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = n(parseFloat(v), 2) + suf; b.dataset.v = v;
+      b.setAttribute('aria-pressed', String(parseFloat(v) === segVal[el.id]));
+      b.addEventListener('click', () => {
+        segVal[el.id] = parseFloat(v);
+        el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        update();
+      });
+      el.appendChild(b);
+    });
+  });
+
+  // section 3 chart
+  (function () {
+    const svg = $('capchart'); const W = 760, H = 260, L = 50, R = 20, T = 20, B = 40;
+    const x = (h) => L + (W - L - R) * h / 24, y = (p) => T + (H - T - B) * (1 - p / 100);
+    const demand = [8,6,5,5,6,9,16,28,40,46,52,58,62,60,55,50,56,68,74,64,44,28,16,10,8];
+    let path = '', area = '';
+    demand.forEach((d, i) => { path += (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(d).toFixed(1); });
+    area = path + 'L' + x(24) + ' ' + y(0) + 'L' + x(0) + ' ' + y(0) + 'Z';
+    let g = '';
+    [0, 25, 50, 75, 100].forEach((p) => { g += `<line x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}" stroke="var(--line)"/><text x="${L - 8}" y="${y(p) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${p}%</text>`; });
+    [0, 6, 12, 18, 24].forEach((h) => { g += `<text x="${x(h)}" y="${H - 18}" text-anchor="middle" font-size="11" fill="var(--muted)">${String(h).padStart(2, '0')}:00</text>`; });
+    g += `<path d="${area}" fill="var(--accent-soft)"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(85)}" y2="${y(85)}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="6 4"/>`;
+    g += `<text x="${W - R - 4}" y="${y(85) - 8}" text-anchor="end" font-size="12" font-weight="600" fill="var(--ink)">VPS: fixed capacity billed all day</text>`;
+    g += `<text x="${x(9.4)}" y="${y(30)}" font-size="12" font-weight="600" fill="var(--accent)">Serverless: billed on demand</text>`;
+    g += `<text x="${L}" y="${H - 2}" font-size="11" fill="var(--muted)">Share of capacity (illustrative) · hour of day</text>`;
+    svg.innerHTML = g;
+  })();
+
+  // section 4 timeline
+  (function () {
+    const svg = $('timeline'); const L = 110, R = 20, W = 760; const x = (ms) => L + (W - L - R) * ms / 500;
+    const cpu = [[0, 10, 'parse + validate'], [220, 230, 'check result'], [490, 500, 'respond']];
+    const io = [[10, 220, 'waiting on Turnstile Siteverify'], [230, 490, 'waiting on Zoho']];
+    let g = '';
+    [0, 100, 200, 300, 400, 500].forEach((ms) => { g += `<line x1="${x(ms)}" x2="${x(ms)}" y1="20" y2="200" stroke="var(--line)"/><text x="${x(ms)}" y="222" text-anchor="middle" font-size="11" fill="var(--muted)">${ms} ms</text>`; });
+    g += `<text x="0" y="56" font-size="12" font-weight="600" fill="var(--ink)">Request A</text>`;
+    io.forEach(([a, b, t]) => { g += `<rect x="${x(a)}" y="40" width="${x(b) - x(a)}" height="26" fill="var(--soft)" stroke="var(--line)"/><text x="${(x(a) + x(b)) / 2}" y="57" text-anchor="middle" font-size="11" fill="var(--muted)">${t}</text>`; });
+    cpu.forEach(([a, b]) => { g += `<rect x="${x(a)}" y="36" width="${Math.max(4, x(b) - x(a))}" height="34" rx="1" fill="var(--accent)"/>`; });
+    g += `<text x="0" y="102" font-size="12" font-weight="600" fill="var(--ink)">Request B</text>`;
+    g += `<rect x="${x(120)}" y="86" width="${x(480) - x(120)}" height="26" fill="var(--soft)" stroke="var(--line)" stroke-dasharray="4 3"/><text x="${x(300)}" y="103" text-anchor="middle" font-size="11" fill="var(--muted)">concurrent request on the same instance, using CPU while A waits</text>`;
+    [[120, 130], [470, 480]].forEach(([a, b]) => { g += `<rect x="${x(a)}" y="82" width="${Math.max(4, x(b) - x(a))}" height="34" fill="var(--accent)" opacity="0.6"/>`; });
+    g += `<text x="0" y="150" font-size="12" font-weight="600" fill="var(--ink)">Memory</text>`;
+    g += `<rect x="${x(0)}" y="134" width="${x(500) - x(0)}" height="26" fill="var(--db-soft)" stroke="var(--db)"/><text x="${x(250)}" y="151" text-anchor="middle" font-size="11" fill="var(--db)">2 GB allocated for 500 ms, shared by requests on this instance</text>`;
+    g += `<rect x="${L}" y="178" width="12" height="12" fill="var(--accent)"/><text x="${L + 18}" y="188" font-size="11" fill="var(--muted)">active CPU (3 × 10 ms = 30 ms billed)</text>`;
+    g += `<rect x="${L + 260}" y="178" width="12" height="12" fill="var(--soft)" stroke="var(--line)"/><text x="${L + 278}" y="188" font-size="11" fill="var(--muted)">waiting: no CPU billed (470 ms)</text>`;
+    svg.innerHTML = g;
+  })();
+
+  function setOut(id, txt) { const el = $(id); if (el) el.textContent = txt; }
+
+  function compute(visitors) {
+    const rate = num('cp-rate'), extra = segVal['cp-extra'];
+    let cpuMs = num('cp-cpu'); const dur = num('cp-dur'); const ram = segVal['cp-ram'];
+    const capped = cpuMs > dur; if (capped) cpuMs = dur;
+    const forms = Math.round(visitors * rate / 100);
+    const inv = forms + visitors * extra;
+    const cpuH = inv * cpuMs / 3600000, gbH = inv * dur * ram / 3600000;
+    const cpuC = cpuH * 0.177, memC = gbH * 0.0146, invRaw = inv / 1e6 * 0.60;
+    const allow = num('cp-allow'); const invOver = Math.max(0, inv - allow) / 1e6 * 0.60;
+    return { forms, inv, cpuH, gbH, cpuC, memC, invRaw, invOver, capped };
+  }
+  function r2() {
+    const s = Math.max(0, num('r2-gb') - 10) * 0.015, a = Math.max(0, num('r2-a') - 1e6) / 1e6 * 4.50, b = Math.max(0, num('r2-b') - 1e7) / 1e6 * 0.36;
+    return { s, a, b, t: s + a + b };
+  }
+  function neon() {
+    const h = num('db-hours'), cu = segVal['db-cu'], gb = num('db-gb');
+    const cuh = h * cu; return { cuh, ram: cu * 4, cost: cuh * 0.106 + gb * 0.35, free: cuh <= 100 && gb <= 1 };
+  }
+
+  let lastSummary = '';
+  function update() {
+    // 5
+    const conc = num('mb-conc'), size = num('mb-size'), buf = conc * size;
+    setOut('mb-conc-o', n(conc)); setOut('mb-size-o', size + ' MB');
+    setOut('mb-out', n(buf) + ' MB'); setOut('mb-pct', n(buf / 2000 * 100, 1) + '%');
+    $('mb-meter').querySelector('i').style.width = Math.min(100, buf / 2000 * 100) + '%';
+    $('mb-meter').classList.toggle('over', buf > 2000);
+    $('mb-msg').innerHTML = buf > 2000 ? `<div class="warnbox">Exceeds the 2,000 MB reference instance by ${n(buf - 2000)} MB. Fully buffered files at this load would not fit.</div>` : `<div class="okbox">Fits within the 2,000 MB reference instance.</div>`;
+    // 6
+    const vis = segVal['bw-vis'], vp = num('bw-video'), ip = num('bw-image'), hit = num('bw-hit');
+    setOut('bw-video-o', vp + '%'); setOut('bw-image-o', ip + '%'); setOut('bw-hit-o', hit + '%');
+    const pv = 143.15 * vp / 100 + 27 * ip / 100;
+    const vgb = vis * 143.15 * vp / 100 / 1000, igb = vis * 27 * ip / 100 / 1000, tot = vgb + igb, cached = tot * hit / 100;
+    setOut('bw-pv', n(pv, 4) + ' MB'); setOut('bw-vgb', gbFmt(vgb)); setOut('bw-igb', gbFmt(igb)); setOut('bw-tot', gbFmt(tot)); setOut('bw-cache', gbFmt(cached)); setOut('bw-origin', gbFmt(tot - cached));
+    [10000, 25000, 50000].forEach((v, i) => setOut('bw-s' + (i + 1), n(v * pv / 1000, 4) + ' GB'));
+    const R2 = r2(); setOut('r2-cs', usd(R2.s)); setOut('r2-ca', usd(R2.a)); setOut('r2-cb', usd(R2.b)); setOut('r2-tot', usd(R2.t));
+    const egr = num('bw-r2egress'), cfPlan = num('bw-cfplan'), vIncl = num('bw-vincl'), vRate = num('bw-vrate');
+    const cfCost = (totGB) => totGB * (1 - hit / 100) * egr + R2.t + cfPlan;
+    const vCost = (totGB) => Math.max(0, totGB - vIncl) * vRate;
+    setOut('bw-c-egress', usd((tot - cached) * egr)); setOut('bw-c-ops', usd(R2.t)); setOut('bw-c-cf', usd(cfCost(tot))); setOut('bw-c-v', usd(vCost(tot)));
+    [10000, 25000, 50000].forEach((v, i) => { const g = v * pv / 1000; setOut('bw-p-gb' + (i + 1), gbFmt(g)); setOut('bw-p-cf' + (i + 1), usd(cfCost(g))); setOut('bw-p-v' + (i + 1), usd(vCost(g))); });
+    // 7
+    setOut('cp-rate-o', num('cp-rate') + '%'); setOut('cp-cpu-o', num('cp-cpu')); setOut('cp-dur-o', num('cp-dur'));
+    const C = compute(segVal['cp-vis']);
+    $('cp-msg').innerHTML = C.capped ? `<div class="warnbox">Active CPU cannot exceed duration in this single-core model, so it is capped at ${n(num('cp-dur'))} ms.</div>` : '';
+    setOut('cp-forms', n(C.forms)); setOut('cp-inv', n(C.inv)); setOut('cp-cpuh', n(C.cpuH, 6)); setOut('cp-gbh', n(C.gbH, 6));
+    setOut('cp-cpuc', usd(C.cpuC)); setOut('cp-memc', usd(C.memC)); setOut('cp-invraw', usd(C.invRaw)); setOut('cp-raw', usd(C.cpuC + C.memC + C.invRaw)); setOut('cp-invover', usd(C.invOver));
+    $('cp-table').innerHTML = [10000, 25000, 50000].map((v) => { const c = compute(v); return `<tr><td class="n">${n(v)}</td><td class="n">${n(c.inv)}</td><td class="n">${c.cpuH.toFixed(6)}</td><td class="n">${c.gbH.toFixed(6)}</td><td class="n">${(c.cpuC + c.memC).toFixed(6)}</td></tr>`; }).join('');
+    // 9
+    setOut('db-hours-o', n(num('db-hours'))); setOut('db-gb-o', num('db-gb').toFixed(1) + ' GB');
+    const N = neon(); setOut('db-cuh', n(N.cuh, 2)); setOut('db-ram', '~' + n(N.ram, 2) + ' GB'); setOut('db-cost', usd(N.cost));
+    $('db-free').innerHTML = N.free ? `<div class="okbox">Within the illustrative free-tier limits (≤100 CU-hours, ≤1 GB).</div>` : `<div class="warnbox">Outside the illustrative free-tier limits; a paid plan would apply.</div>`;
+    // 10
+    const seats = Math.max(1, Math.round(num('c-seats'))), dbm = $('c-db').value;
+    $('c-neon-wrap').hidden = dbm !== 'neonpaid';
+    const usage = C.cpuC + C.memC + C.invOver + num('c-other');
+    const credit = num('c-credit');
+    const vercelUsage = Math.max(0, usage - credit);
+    const vercel = 20 * seats + vercelUsage;
+    const dbCost = dbm === 'neonpaid' ? num('c-neon') : dbm === 'supa' ? 25 : 0;
+    const dbLabel = { none: 'None', neonfree: 'Neon Free (verify eligibility)', neonpaid: 'Neon paid usage', supa: 'Supabase Pro (illustrative)' }[dbm];
+    const extra = num('c-extra'), cont = num('c-cont');
+    const mediaEgress = (tot - cached) * egr + cfPlan;
+    const total = vercel + R2.t + mediaEgress + dbCost + extra + cont;
+    const rows = [
+      ['Vercel seats', seats + ' × $20', 20 * seats],
+      ['Vercel metered usage', 'compute ' + usd(C.cpuC + C.memC) + ' + invocation overage ' + usd(C.invOver) + ' + other ' + usd(num('c-other')) + ', less ' + usd(credit) + ' credit', vercelUsage],
+      ['Cloudflare R2', 'storage + operations from section 6', R2.t],
+      ['Cloudflare media delivery', 'R2 egress + CDN plan fee from section 6', mediaEgress],
+      ['Database', dbLabel, dbCost],
+      ['Cloudflare Turnstile', 'free', 0],
+      ['Other optional costs', 'entered', extra],
+      ['Contingency', 'entered', cont]
+    ];
+    $('c-rows').innerHTML = rows.map((r) => `<tr><td>${r[0]}</td><td class="note">${r[1]}</td><td class="n mono">${usd(r[2])}</td></tr>`).join('') + `<tr class="total"><td>Estimated total</td><td class="note">before taxes and exclusions</td><td class="n mono">${usd(total)}</td></tr>`;
+    lastSummary = 'TPS website: estimated monthly provider costs (illustrative, not an invoice)\n'
+      + rows.map((r) => '- ' + r[0] + ': ' + usd(r[2]) + ' (' + r[1] + ')').join('\n')
+      + '\nEstimated total: ' + usd(total) + '/month'
+      + '\nAssumptions: ' + n(segVal['cp-vis']) + ' monthly visitors, ' + num('cp-rate') + '% form rate, ' + segVal['cp-extra'] + ' other dynamic calls per visitor.'
+      + '\nExcludes taxes, domain, SimplyBook/Zoho subscriptions, engineering fees, unmodelled CDN/edge/transfer/image optimisation, backups and support.';
+    $('c-summary').textContent = lastSummary;
+  }
+
+  document.querySelectorAll('input, select').forEach((el) => el.addEventListener('input', update));
+  $('c-neon-sim').addEventListener('click', () => { $('c-neon').value = neon().cost.toFixed(3); update(); });
+  $('c-copy').addEventListener('click', () => {
+    const msg = $('c-copy-msg');
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($('c-summary')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); msg.textContent = 'Copy is blocked here. The summary is selected; press Ctrl+C or Cmd+C.'; };
+    try { navigator.clipboard.writeText(lastSummary).then(() => { msg.textContent = 'Copied.'; }, fallback); } catch (e) { fallback(); }
+  });
+  update();
+})();
+</script>

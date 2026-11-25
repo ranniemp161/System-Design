@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Who Owns What: TPS, Developer, Providers",
+    "output": ".archify/architecture-tps-ownership-20261125-120500/tps-ownership.html",
+    "quality_profile": "showcase",
+    "legend": { "entries": { "external": { "label": "TPS-owned" }, "backend": { "label": "Developer (contracted)" }, "cloud": { "label": "Infrastructure providers" } } }
+  },
+  "components": [
+    { "id": "tps", "type": "external", "label": "TPS", "sublabel": "business owner", "icon": "person", "tag": "owns land, funds materials", "pos": [40, 190], "size": [170, 320] },
+    { "id": "domain", "type": "external", "label": "Domain name", "sublabel": "registered to TPS", "icon": "flag", "pos": [400, 190], "size": [190, 60] },
+    { "id": "accounts", "type": "external", "label": "Provider organizations", "sublabel": "Vercel · Cloudflare · DB host", "icon": "briefcase", "pos": [400, 277], "size": [190, 60] },
+    { "id": "data", "type": "external", "label": "Production data", "sublabel": "enquiries, content, media", "icon": "database", "pos": [400, 364], "size": [190, 60] },
+    { "id": "billing", "type": "external", "label": "Billing + subscriptions", "sublabel": "TPS card on file", "icon": "calendar", "pos": [400, 451], "size": [190, 60] },
+    { "id": "dev", "type": "backend", "label": "Developer", "sublabel": "design · configure · deploy · assist", "icon": "briefcase", "tag": "builds + maintains", "pos": [800, 277], "size": [210, 60] },
+    { "id": "providers", "type": "cloud", "label": "Providers", "sublabel": "operate underlying infrastructure", "icon": "cloud", "tag": "the utilities", "pos": [800, 451], "size": [210, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Owned and controlled by TPS", "wraps": ["tps", "domain", "accounts", "data", "billing"] }
+  ],
+  "connections": [
+    { "id": "own-domain", "from": "tps", "to": "domain", "label": "owns" },
+    { "id": "own-accounts", "from": "tps", "to": "accounts", "label": "owns (admin)" },
+    { "id": "own-data", "from": "tps", "to": "data", "label": "owns" },
+    { "id": "own-billing", "from": "tps", "to": "billing", "label": "pays" },
+    { "id": "dev-access", "from": "dev", "to": "accounts", "label": "role-based access", "variant": "security" },
+    { "id": "provider-fees", "from": "billing", "to": "providers", "label": "provider fees (direct)", "variant": "emphasis" },
+    { "id": "maintenance", "from": "tps", "to": "dev", "label": "maintenance fee · agreed scope", "variant": "dashed", "fromSide": "top", "toSide": "top" }
+  ],
+  "cards": [
+    { "dot": "slate", "title": "House analogy", "items": ["TPS owns the land and pays for materials and utilities", "The developer is the builder: builds and maintains under contract", "Providers are the utilities: they run the power, water and roads"] },
+    { "dot": "amber", "title": "Three kinds of cost", "items": ["Provider fees: billed by Vercel, Cloudflare, etc. directly to TPS", "Maintenance fees: developer, within the agreed maintenance scope", "New development: quoted separately, outside maintenance"] },
+    { "dot": "rose", "title": "Not in this arrangement", "items": ["Developer does not resell hosting", "Reselling would need a separate commercial agreement, support and liability terms", "If the engagement ends, TPS removes developer access; nothing needs transferring"] }
+  ]
+}

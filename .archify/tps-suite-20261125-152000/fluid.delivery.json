@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "47e904d3-b98b-4017-9059-da468f7d265d",
+  "status": "current",
+  "command": "deliver",
+  "type": "waterfall",
+  "input": "D:\\Dev Folder\\System Design\\.archify\\tps-suite-20261125-152000\\fluid.json",
+  "output": "D:\\Dev Folder\\System Design\\.archify\\tps-suite-20261125-152000\\fluid.html",
+  "specification": {
+    "sha256": "da6729de1c626f98d3cc0975c163683bdc63c0e11c1fbb74e5ad1c1b2b1df2a1",
+    "bytes": 2746
+  },
+  "artifact": {
+    "sha256": "5151189f74f57deebb5777533df14950c999eafaef8b777efbbac0621e288388",
+    "bytes": 936347
+  }
+}

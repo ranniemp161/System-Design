@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "f54dc0a3-be5c-4780-9466-127a176577be",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "D:\\Dev Folder\\System Design\\.archify\\tps-suite-20261125-152000\\turnstile.json",
+  "output": "D:\\Dev Folder\\System Design\\.archify\\tps-suite-20261125-152000\\turnstile.html",
+  "specification": {
+    "sha256": "7af3d58fae255a5a5e28b08d1a240cb245bd05bcc4ae5ea43d864932f2f0820a",
+    "bytes": 5088
+  },
+  "artifact": {
+    "sha256": "94d2774063d041180e6c993002d13da5f2406c6b0a7e5c14bd83e0aca7e4d43e",
+    "bytes": 931512
+  }
+}

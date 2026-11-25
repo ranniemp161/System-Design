@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Who Owns What: TPS, Developer, Providers",
+    "output": ".archify/tps-suite-20261125-152000/ownership.html",
+    "quality_profile": "showcase",
+    "parentHref": "launch.html",
+    "legend": { "entries": { "external": { "label": "Owned by TPS" }, "backend": { "label": "Developer (under contract)" }, "cloud": { "label": "Infrastructure providers" } } },
+    "views": [
+      { "id": "owns", "label": "What TPS owns", "focus": ["tps", "domain", "accounts", "data", "billing"], "note": "Everything that matters is in TPS's name. Like owning the land and paying for materials." },
+      { "id": "developer", "label": "The developer's role", "focus": ["tps", "dev", "accounts"], "note": "The builder: works inside TPS's accounts with access TPS can remove at any time." },
+      { "id": "fees", "label": "Who gets paid", "focus": ["tps", "billing", "providers", "dev"], "note": "Provider fees go straight to providers; the developer charges only for maintenance and new work." }
+    ]
+  },
+  "components": [
+    { "id": "tps", "type": "external", "label": "TPS", "sublabel": "business owner", "icon": "person", "tag": "owns the land", "pos": [40, 210], "size": [170, 280],
+      "explanation": "House analogy: TPS owns the land and pays for materials and utilities. Every account, the domain, the data and the billing sit in TPS's name, so nothing has to be handed over if the developer changes." },
+    { "id": "domain", "type": "external", "label": "Domain name", "sublabel": "registered to TPS", "icon": "flag", "pos": [400, 215], "size": [190, 60],
+      "explanation": "The website address. Registered and renewed by TPS; renewal cost is not included in the hosting estimate." },
+    { "id": "accounts", "type": "external", "label": "Provider accounts", "sublabel": "Vercel · Cloudflare · DB host", "icon": "briefcase", "pos": [400, 300], "size": [190, 60],
+      "explanation": "TPS creates and owns the provider organizations as administrator, then invites the developer with a role that gives only the access the work needs." },
+    { "id": "data", "type": "external", "label": "Business data", "sublabel": "enquiries · content · media", "icon": "database", "pos": [400, 385], "size": [190, 60],
+      "explanation": "Production data belongs to TPS wherever it is stored: media in R2, enquiries in Zoho, bookings in SimplyBook, and any optional database." },
+    { "id": "billing", "type": "external", "label": "Billing", "sublabel": "plans + subscriptions on TPS card", "icon": "calendar", "pos": [400, 470], "size": [190, 60],
+      "explanation": "Provider subscriptions and usage are billed to TPS's own payment method, so TPS sees every provider invoice directly." },
+    { "id": "dev", "type": "backend", "label": "Developer", "sublabel": "design · set up · deploy · support", "icon": "briefcase", "tag": "the builder", "pos": [800, 100], "size": [210, 60],
+      "explanation": "Designs, configures and deploys the website, and assists with operations within the agreed maintenance scope. New features are quoted separately. The developer does not resell hosting; that would need a separate agreement covering support and liability." },
+    { "id": "providers", "type": "cloud", "label": "Providers", "sublabel": "Vercel · Cloudflare · DB host", "icon": "cloud", "tag": "the utilities", "pos": [800, 470], "size": [210, 60],
+      "explanation": "Operate the underlying servers, networks and storage, like utility companies supplying power and water." }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Owned and controlled by TPS", "wraps": ["tps", "domain", "accounts", "data", "billing"] }
+  ],
+  "connections": [
+    { "id": "own-domain", "from": "tps", "to": "domain", "label": "owns" },
+    { "id": "own-accounts", "from": "tps", "to": "accounts", "label": "admin owner" },
+    { "id": "own-data", "from": "tps", "to": "data", "label": "owns" },
+    { "id": "own-billing", "from": "tps", "to": "billing", "label": "pays" },
+    { "id": "dev-access", "from": "dev", "to": "accounts", "label": "role-based access", "variant": "security" },
+    { "id": "provider-fees", "from": "billing", "to": "providers", "label": "provider fees, direct", "variant": "emphasis" },
+    { "id": "maintenance", "from": "tps", "to": "dev", "label": "maintenance fee · agreed scope", "variant": "dashed", "fromSide": "top", "toSide": "top" }
+  ],
+  "cards": [
+    { "dot": "slate", "title": "House analogy", "items": ["TPS owns the land and pays for materials and utilities", "The developer builds and maintains under contract", "Providers are the utilities"] },
+    { "dot": "amber", "title": "Three kinds of cost", "items": ["Provider fees: billed by providers directly to TPS", "Maintenance: developer, within agreed scope", "New development: quoted separately"] },
+    { "dot": "rose", "title": "Not included", "items": ["No hosting resale by the developer", "Resale would need its own agreement, support and liability terms"] }
+  ]
+}

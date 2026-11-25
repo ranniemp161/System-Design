@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "diagram_type": "waterfall",
+  "meta": {
+    "title": "Fluid Compute Billing: One Instance, Two Form Submissions",
+    "output": ".archify/tps-suite-20261125-152000/fluid.html",
+    "evidence": "illustrative",
+    "unit": "ms",
+    "quality_profile": "showcase"
+  },
+  "spans": [
+    { "id": "mem", "name": "Instance memory: 2 GB allocated", "service": "Memory (billed GB-hours)", "start": 0, "end": 500, "detail": "2 GB × 0.5 s = 1 GB-second = 0.000278 GB-hours. Shared by every request on this instance." },
+    { "id": "reqa", "name": "Request A: consultation form", "service": "Request (1 invocation)", "start": 0, "end": 500, "detail": "Wall-clock duration 500 ms; only 30 ms of it uses the CPU." },
+    { "id": "a1", "name": "Parse + validate form", "service": "Active CPU (billed)", "start": 0, "duration": 10, "parent": "reqa" },
+    { "id": "a2", "name": "Wait for Turnstile Siteverify", "service": "Waiting on I/O (CPU not billed)", "start": 10, "end": 220, "parent": "reqa" },
+    { "id": "a3", "name": "Check result", "service": "Active CPU (billed)", "start": 220, "duration": 10, "parent": "reqa" },
+    { "id": "a4", "name": "Wait for Zoho", "service": "Waiting on I/O (CPU not billed)", "start": 230, "end": 490, "parent": "reqa" },
+    { "id": "a5", "name": "Send confirmation", "service": "Active CPU (billed)", "start": 490, "duration": 10, "parent": "reqa" },
+    { "id": "reqb", "name": "Request B: arrives while A waits", "service": "Request (1 invocation)", "start": 120, "end": 480, "detail": "Runs on the same instance and memory instead of starting a new one." },
+    { "id": "b1", "name": "Parse + validate form", "service": "Active CPU (billed)", "start": 120, "duration": 10, "parent": "reqb" },
+    { "id": "b2", "name": "Wait for Siteverify + Zoho", "service": "Waiting on I/O (CPU not billed)", "start": 130, "end": 470, "parent": "reqb" },
+    { "id": "b3", "name": "Send confirmation", "service": "Active CPU (billed)", "start": 470, "duration": 10, "parent": "reqb" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "What is billed", "items": ["Active CPU: 30 ms + 20 ms = 50 ms → 0.0000139 CPU-hours × $0.177", "Memory: 2 GB for 500 ms → 0.000278 GB-hours × $0.0146", "Invocations: 2 × $0.60 per million"] },
+    { "dot": "slate", "title": "What is not billed", "items": ["CPU while waiting on Cloudflare and Zoho (440 ms + 340 ms)", "Requests are not rounded up to an hour; usage accumulates", "Request B adds no extra memory: it shares A's instance"] },
+    { "dot": "amber", "title": "Read carefully", "items": ["Timings are illustrative, not measured", "1 vCPU / 2 GB is an allocation, not measured usage", "Rates from planning; verify on Vercel's pricing page"] }
+  ]
+}

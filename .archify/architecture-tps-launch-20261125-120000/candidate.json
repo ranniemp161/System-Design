@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "TPS Website Launch Architecture",
+    "output": ".archify/architecture-tps-launch-20261125-120000/tps-launch.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "visitors", "type": "external", "label": "Visitors", "sublabel": "10k–50k monthly (assumed)", "icon": "person", "pos": [40, 140], "size": [160, 460] },
+    { "id": "cfcdn", "type": "cloud", "label": "Cloudflare CDN", "sublabel": "direct media URLs", "brand": "cloudflare", "pos": [380, 140], "size": [170, 60] },
+    { "id": "r2", "type": "cloud", "label": "R2 object storage", "sublabel": "170.15 MB: video + images", "brand": "cloudflare", "pos": [720, 140], "size": [180, 60] },
+    { "id": "edge", "type": "frontend", "label": "Vercel Edge CDN / WAF", "sublabel": "cache hits run no functions", "brand": "vercel", "pos": [380, 270], "size": [170, 60] },
+    { "id": "static", "type": "frontend", "label": "Next.js static pages", "sublabel": "prebuilt HTML / JS", "brand": "next-js", "pos": [720, 270], "size": [180, 60] },
+    { "id": "widget", "type": "cloud", "label": "Turnstile widget", "sublabel": "in consultation form", "brand": "cloudflare", "pos": [380, 400], "size": [170, 60] },
+    { "id": "handler", "type": "backend", "label": "Form route handler", "sublabel": "Next.js · Fluid Compute", "tag": "1 vCPU / 2 GB (proposed)", "brand": "vercel", "pos": [720, 400], "size": [180, 64] },
+    { "id": "zoho", "type": "external", "label": "Zoho", "sublabel": "enquiry destination", "pos": [1080, 400], "size": [170, 60] },
+    { "id": "siteverify", "type": "cloud", "label": "Turnstile Siteverify API", "sublabel": "server-side token check", "brand": "cloudflare", "pos": [720, 560], "size": [180, 60] },
+    { "id": "simplybook", "type": "external", "label": "SimplyBook", "sublabel": "booking link or embed", "pos": [380, 540], "size": [170, 60] },
+    { "id": "prisma", "type": "backend", "label": "Prisma ORM", "sublabel": "optional", "brand": "prisma", "pos": [1080, 560], "size": [170, 60] },
+    { "id": "pg", "type": "database", "label": "PostgreSQL", "sublabel": "Neon OR Supabase (one)", "brand": "postgresql", "pos": [1080, 700], "size": [170, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Cloudflare (media)", "wraps": ["cfcdn", "r2"] },
+    { "kind": "region", "label": "Vercel project · London (illustrative)", "wraps": ["static", "handler"] },
+    { "kind": "security-group", "label": "Optional · only if local persistence needed", "wraps": ["prisma", "pg"] }
+  ],
+  "connections": [
+    { "id": "v-cdn", "from": "visitors", "to": "cfcdn", "label": "media URLs" },
+    { "id": "cdn-r2", "from": "cfcdn", "to": "r2", "label": "cache miss only", "variant": "dashed" },
+    { "id": "v-edge", "from": "visitors", "to": "edge", "label": "page requests", "variant": "emphasis" },
+    { "id": "edge-static", "from": "edge", "to": "static", "label": "serve cached" },
+    { "id": "v-widget", "from": "visitors", "to": "widget", "label": "consultation form" },
+    { "id": "widget-handler", "from": "widget", "to": "handler", "label": "form + token", "variant": "security" },
+    { "id": "handler-verify", "from": "handler", "to": "siteverify", "label": "Siteverify", "variant": "security" },
+    { "id": "handler-zoho", "from": "handler", "to": "zoho", "label": "after valid token", "variant": "emphasis" },
+    { "id": "handler-prisma", "from": "handler", "to": "prisma", "label": "optional persist", "variant": "dashed" },
+    { "id": "prisma-pg", "from": "prisma", "to": "pg", "label": "SQL", "variant": "dashed" },
+    { "id": "v-book", "from": "visitors", "to": "simplybook", "label": "treatment booking" }
+  ],
+  "cards": [
+    { "dot": "slate", "title": "Confirmed scope", "items": ["Public website launch only, not the future CRM", "Static pages from Vercel; cache hits do not execute functions", "Media: 143.15 MB video + 27 MB images in R2, loaded by direct browser URLs (no API proxy)", "No separate NestJS server required"] },
+    { "dot": "amber", "title": "Proposed configuration", "items": ["Vercel Standard: 1 vCPU / 2 GB per instance", "London region (illustrative)", "Database optional; pick one provider only if local persistence is needed"] },
+    { "dot": "rose", "title": "To confirm before build", "items": ["SimplyBook: link or embed", "Zoho: local handler vs hosted form/link; integration and authentication method", "Actual traffic, peak concurrency and cache behaviour"] }
+  ]
+}

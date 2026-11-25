@@ -1,0 +1,391 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "TPS Website Launch Architecture",
+    "output": ".archify/tps-suite-20261125-152000/launch.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "pages",
+        "label": "Browsing the website",
+        "focus": [
+          "visitors",
+          "edge",
+          "static"
+        ],
+        "note": "Most visits are served from cache. No application code runs for a cached page."
+      },
+      {
+        "id": "media",
+        "label": "Photos and videos",
+        "focus": [
+          "visitors",
+          "cfcdn",
+          "r2"
+        ],
+        "note": "Media loads straight from Cloudflare. Only cache misses reach R2 storage."
+      },
+      {
+        "id": "enquiry",
+        "label": "Consultation enquiry",
+        "focus": [
+          "visitors",
+          "widget",
+          "handler",
+          "siteverify",
+          "zoho"
+        ],
+        "note": "The bot check is verified on the server before anything is sent to Zoho."
+      },
+      {
+        "id": "booking",
+        "label": "Treatment booking",
+        "focus": [
+          "visitors",
+          "simplybook"
+        ],
+        "note": "SimplyBook takes and confirms bookings. The website stores none."
+      },
+      {
+        "id": "optional-db",
+        "label": "Optional database",
+        "focus": [
+          "handler",
+          "prisma",
+          "pg"
+        ],
+        "note": "Only added if TPS wants to keep its own copy of records."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "visitors",
+      "type": "external",
+      "label": "Website visitors",
+      "sublabel": "10k–50k / month (assumed)",
+      "icon": "person",
+      "explanation": "Planning assumption of 10,000 to 50,000 monthly visitors. Each visitor's browser talks to three services directly: Vercel for pages and the form, Cloudflare for media, SimplyBook for bookings.",
+      "pos": [
+        40,
+        240
+      ],
+      "size": [
+        170,
+        60
+      ]
+    },
+    {
+      "id": "edge",
+      "type": "frontend",
+      "label": "Vercel edge network",
+      "sublabel": "global CDN + firewall (WAF)",
+      "brand": "vercel",
+      "explanation": "Vercel's CDN caches the prebuilt pages close to visitors and applies its web application firewall. A cache hit is answered here and does not execute any application function, so it adds no compute cost.",
+      "pos": [
+        330,
+        240
+      ],
+      "size": [
+        190,
+        60
+      ]
+    },
+    {
+      "id": "static",
+      "type": "frontend",
+      "label": "Website pages",
+      "sublabel": "Next.js, prebuilt (static)",
+      "brand": "next-js",
+      "explanation": "Pages are generated at build time with Next.js and deployed to Vercel. Proposed region: London (illustrative). No separate NestJS or API server is needed for this scope.",
+      "pos": [
+        620,
+        240
+      ],
+      "size": [
+        180,
+        60
+      ]
+    },
+    {
+      "id": "cfcdn",
+      "type": "cloud",
+      "label": "Cloudflare CDN",
+      "sublabel": "caches photos + videos",
+      "brand": "cloudflare",
+      "explanation": "Media files are referenced by direct URLs in the page, so browsers fetch them from Cloudflare, never through the TPS application. Cached copies are served from Cloudflare's edge.",
+      "href": "media.html",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "r2",
+      "type": "cloud",
+      "label": "Photo + video storage",
+      "sublabel": "Cloudflare R2 · 170.15 MB",
+      "brand": "cloudflare",
+      "explanation": "Object storage holding videos (143.15 MB, 84.13%) and images (27 MB, 15.87%). Read only on a CDN cache miss. R2 has no charge for direct internet egress under the pricing used in planning.",
+      "href": "media.html",
+      "pos": [
+        330,
+        60
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "widget",
+      "type": "cloud",
+      "label": "Bot check",
+      "sublabel": "Cloudflare Turnstile widget",
+      "brand": "cloudflare",
+      "explanation": "Runs in the consultation form and gives the browser a one-time token. It is a bot check, not a login, and not complete DDoS protection.",
+      "href": "turnstile.html",
+      "pos": [
+        330,
+        566
+      ],
+      "size": [
+        190,
+        60
+      ]
+    },
+    {
+      "id": "handler",
+      "type": "backend",
+      "label": "Form handler",
+      "sublabel": "Next.js route · Fluid Compute",
+      "tag": "1 vCPU / 2 GB proposed",
+      "brand": "vercel",
+      "explanation": "A small server function on Vercel. It verifies the Turnstile token with Cloudflare, validates input, applies rate limits, and only then forwards the enquiry to Zoho. Proposed Standard size: 1 vCPU / 2 GB per instance. If Zoho's own hosted form is chosen instead, this handler is not needed.",
+      "href": "turnstile.html",
+      "pos": [
+        620,
+        400
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "siteverify",
+      "type": "security",
+      "label": "Token verification",
+      "sublabel": "Turnstile Siteverify API",
+      "brand": "cloudflare",
+      "explanation": "Server-to-server check using the secret key, which never leaves the server. An invalid token means the enquiry is rejected and nothing reaches Zoho.",
+      "pos": [
+        620,
+        566
+      ],
+      "size": [
+        180,
+        60
+      ]
+    },
+    {
+      "id": "zoho",
+      "type": "external",
+      "label": "Zoho",
+      "sublabel": "receives enquiries",
+      "explanation": "Destination for consultation enquiries. To confirm before build: whether TPS uses this handler or a Zoho hosted form/link, and the integration and authentication method.",
+      "pos": [
+        940,
+        406
+      ],
+      "size": [
+        180,
+        60
+      ]
+    },
+    {
+      "id": "simplybook",
+      "type": "external",
+      "label": "SimplyBook",
+      "sublabel": "bookings: link or embed",
+      "explanation": "Visitors choose a treatment and book on SimplyBook, which handles confirmation. The website stores no bookings. To confirm: link out or embedded widget.",
+      "pos": [
+        40,
+        400
+      ],
+      "size": [
+        170,
+        60
+      ]
+    },
+    {
+      "id": "prisma",
+      "type": "backend",
+      "label": "Database connector",
+      "sublabel": "Prisma ORM · optional",
+      "brand": "prisma",
+      "explanation": "Code library the form handler would use to save records, only if TPS needs local persistence.",
+      "pos": [
+        940,
+        566
+      ],
+      "size": [
+        180,
+        60
+      ]
+    },
+    {
+      "id": "pg",
+      "type": "database",
+      "label": "Database",
+      "sublabel": "PostgreSQL · Neon OR Supabase",
+      "brand": "postgresql",
+      "explanation": "Optional. Not needed if Zoho and SimplyBook keep all records and the site has no logins. If needed, choose one host; Neon is recommended when only PostgreSQL is required.",
+      "pos": [
+        940,
+        726
+      ],
+      "size": [
+        180,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Vercel · London (illustrative)",
+      "wraps": [
+        "edge",
+        "static",
+        "handler"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Cloudflare media",
+      "wraps": [
+        "cfcdn",
+        "r2"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Optional: only if TPS keeps its own records",
+      "wraps": [
+        "prisma",
+        "pg"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "v-edge",
+      "from": "visitors",
+      "to": "edge",
+      "label": "open pages",
+      "variant": "emphasis"
+    },
+    {
+      "id": "edge-static",
+      "from": "edge",
+      "to": "static",
+      "label": "cached pages"
+    },
+    {
+      "id": "v-cdn",
+      "from": "visitors",
+      "to": "cfcdn",
+      "label": "load media"
+    },
+    {
+      "id": "cdn-r2",
+      "from": "cfcdn",
+      "to": "r2",
+      "label": "cache miss only",
+      "variant": "dashed"
+    },
+    {
+      "id": "v-widget",
+      "from": "visitors",
+      "to": "widget",
+      "label": "fill in form"
+    },
+    {
+      "id": "widget-handler",
+      "from": "widget",
+      "to": "handler",
+      "label": "form + token",
+      "variant": "security"
+    },
+    {
+      "id": "handler-verify",
+      "from": "handler",
+      "to": "siteverify",
+      "label": "verify token",
+      "variant": "security"
+    },
+    {
+      "id": "handler-zoho",
+      "from": "handler",
+      "to": "zoho",
+      "label": "only if valid",
+      "variant": "emphasis"
+    },
+    {
+      "id": "handler-prisma",
+      "from": "handler",
+      "to": "prisma",
+      "label": "optional save",
+      "variant": "dashed"
+    },
+    {
+      "id": "prisma-pg",
+      "from": "prisma",
+      "to": "pg",
+      "label": "SQL",
+      "variant": "dashed"
+    },
+    {
+      "id": "v-book",
+      "from": "visitors",
+      "to": "simplybook",
+      "label": "book treatment"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "slate",
+      "title": "Confirmed scope",
+      "items": [
+        "Public website launch only, not the future CRM",
+        "Cached pages run no application code",
+        "Media loads by direct URL from Cloudflare, not through the TPS app",
+        "No separate NestJS server"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Proposed",
+      "items": [
+        "Vercel Standard functions: 1 vCPU / 2 GB",
+        "London region (illustrative)",
+        "Database only if local records are needed, one provider"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "To confirm",
+      "items": [
+        "SimplyBook: link or embed",
+        "Zoho: our handler or Zoho's hosted form; auth method",
+        "Real traffic, peak concurrency, cache behaviour"
+      ]
+    }
+  ]
+}

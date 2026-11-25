@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "2d8bd996-3f34-4e0f-bfb1-a32063781a30",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "D:\\Dev Folder\\System Design\\.archify\\architecture-tps-media-delivery-20261125-121000\\candidate.json",
+  "output": "D:\\Dev Folder\\System Design\\.archify\\architecture-tps-media-delivery-20261125-121000\\tps-media-delivery.html",
+  "specification": {
+    "sha256": "3e6aeaf518fe69c75a09e2ac27193406336ac2921bf3d02e552147c4bb4ce912",
+    "bytes": 3355
+  },
+  "artifact": {
+    "sha256": "176ef868407608dc628c4d2192de04a2be12c22beb4f7748d2248720d1477a8e",
+    "bytes": 769980
+  }
+}

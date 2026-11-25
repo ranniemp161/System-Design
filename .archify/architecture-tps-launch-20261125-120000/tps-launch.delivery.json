@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "928e8ee8-0b16-44af-ab59-9bfa364d7596",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "D:\\Dev Folder\\System Design\\.archify\\architecture-tps-launch-20261125-120000\\candidate.json",
+  "output": "D:\\Dev Folder\\System Design\\.archify\\architecture-tps-launch-20261125-120000\\tps-launch.html",
+  "specification": {
+    "sha256": "0f8b35a974e547c6671653210960463da00da7996bb8876f995b02372cff4117",
+    "bytes": 4515
+  },
+  "artifact": {
+    "sha256": "a5fa7a3cef04eaa523e740bd325d97e9054a33cce7ebdcf1a1c4683855c5c5f2",
+    "bytes": 786793
+  }
+}

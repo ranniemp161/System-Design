@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Consultation Form: Bot Check Before Zoho",
+    "output": ".archify/tps-suite-20261125-152000/turnstile.html",
+    "quality_profile": "showcase",
+    "parentHref": "launch.html",
+    "views": [
+      {
+        "id": "check",
+        "label": "Bot check",
+        "focus": [
+          "browser",
+          "turnstile"
+        ],
+        "note": "The widget gives the browser a token to send with the form."
+      },
+      {
+        "id": "valid",
+        "label": "Valid enquiry",
+        "focus": [
+          "handler",
+          "turnstile",
+          "zoho"
+        ],
+        "note": "The handler verifies the token server-side, then forwards to Zoho."
+      },
+      {
+        "id": "rejected",
+        "label": "Rejected enquiry",
+        "focus": [
+          "handler",
+          "browser"
+        ],
+        "note": "A failed check is rejected; nothing reaches Zoho."
+      }
+    ]
+  },
+  "participants": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "browser",
+      "icon": "person"
+    },
+    {
+      "id": "turnstile",
+      "type": "cloud",
+      "label": "Bot check",
+      "sublabel": "Cloudflare Turnstile",
+      "brand": "cloudflare",
+      "explanation": "Cloudflare Turnstile issues a token in the browser and later confirms it for the server. It is not a login and not complete DDoS protection."
+    },
+    {
+      "id": "handler",
+      "type": "backend",
+      "label": "Form handler",
+      "sublabel": "TPS · Next.js on Vercel",
+      "brand": "vercel",
+      "explanation": "Holds the Turnstile secret key, validates input and applies rate limits. If Zoho's own hosted form is used instead, this handler is not needed and Zoho's bot protection must be confirmed."
+    },
+    {
+      "id": "zoho",
+      "type": "external",
+      "label": "Zoho",
+      "sublabel": "enquiries",
+      "explanation": "Receives only enquiries that passed the check. Integration and authentication method to be confirmed before build."
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 215,
+      "label": "Bot check"
+    },
+    {
+      "from": 222,
+      "to": 335,
+      "label": "Server verifies"
+    },
+    {
+      "from": 340,
+      "to": 445,
+      "label": "If valid"
+    },
+    {
+      "from": 452,
+      "to": 530,
+      "label": "If invalid"
+    }
+  ],
+  "messages": [
+    {
+      "id": "challenge",
+      "from": "browser",
+      "to": "turnstile",
+      "y": 172,
+      "label": "run challenge",
+      "variant": "security"
+    },
+    {
+      "id": "token",
+      "from": "turnstile",
+      "to": "browser",
+      "y": 200,
+      "label": "token",
+      "variant": "return"
+    },
+    {
+      "id": "submit",
+      "from": "browser",
+      "to": "handler",
+      "y": 236,
+      "label": "form + token",
+      "variant": "emphasis"
+    },
+    {
+      "id": "siteverify",
+      "from": "handler",
+      "to": "turnstile",
+      "y": 266,
+      "label": "Siteverify",
+      "variant": "security",
+      "note": "uses secret key, kept server-side"
+    },
+    {
+      "id": "result",
+      "from": "turnstile",
+      "to": "handler",
+      "y": 316,
+      "label": "valid / invalid",
+      "variant": "return"
+    },
+    {
+      "id": "forward",
+      "from": "handler",
+      "to": "zoho",
+      "y": 356,
+      "label": "forward enquiry",
+      "variant": "emphasis",
+      "note": "after input validation + rate limit"
+    },
+    {
+      "id": "zoho-ok",
+      "from": "zoho",
+      "to": "handler",
+      "y": 404,
+      "label": "received",
+      "variant": "return"
+    },
+    {
+      "id": "confirm",
+      "from": "handler",
+      "to": "browser",
+      "y": 432,
+      "label": "confirmation",
+      "variant": "return"
+    },
+    {
+      "id": "reject",
+      "from": "handler",
+      "to": "browser",
+      "y": 474,
+      "label": "reject",
+      "variant": "return",
+      "note": "nothing is sent to Zoho"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "turnstile",
+      "from": 167,
+      "to": 205,
+      "type": "cloud"
+    },
+    {
+      "participant": "handler",
+      "from": 231,
+      "to": 480,
+      "type": "backend"
+    },
+    {
+      "participant": "turnstile",
+      "from": 261,
+      "to": 322,
+      "type": "cloud"
+    },
+    {
+      "participant": "zoho",
+      "from": 351,
+      "to": 410,
+      "type": "external"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Handler rules",
+      "items": [
+        "Secret key stays on the server",
+        "Verify the token before forwarding",
+        "Rate limits + input validation"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Limits",
+      "items": [
+        "Bot check only, not a login",
+        "Not complete DDoS protection"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Alternatives",
+      "items": [
+        "Zoho hosted form: visitor → Zoho directly; confirm Zoho's bot protection",
+        "Bookings: visitor → SimplyBook, which confirms; no local storage"
+      ]
+    }
+  ]
+}
