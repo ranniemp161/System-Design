@@ -112,7 +112,7 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 <nav class="toc" aria-label="Sections">
   <a href="#launch">1 Launch architecture</a><a href="#ownership">2 Ownership</a><a href="#serverless">3 Serverful vs serverless</a>
   <a href="#fluid">4 Compute timeline</a><a href="#storage">5 Media storage</a><a href="#bandwidth">6 Bandwidth bill</a>
-  <a href="#compute">7 Compute cost</a><a href="#forms">8 Forms + bookings</a><a href="#database">9 Database</a>
+  <a href="#compute">7 Compute bill</a><a href="#forms">8 Forms + bookings</a><a href="#database">9 Database</a>
   <a href="#costs">10 Monthly cost</a><a href="#verify">11 Verify + approve</a>
 </nav>
 
@@ -261,35 +261,38 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 
 <!-- 7 -->
 <section class="s" id="compute">
-  <div class="shead"><span class="num">07</span><h2>Compute cost</h2>
-  <p>Only form submissions and any other dynamic requests run functions; cached pages do not. Even at 50,000 visitors, compute at these settings costs about a cent and a half a month.</p></div>
-  <div class="panel" style="display:grid;gap:14px">
-    <h3>Compute simulator <span class="tag ill">Illustrative, no benchmarks</span></h3>
+  <div class="shead"><span class="num">07</span><h2>Compute bill</h2>
+  <p>Server code runs only when someone sends the consultation form. Browsing cached pages runs no code and costs nothing in compute. This simulator works out the bill for the form handler, step by step.</p></div>
+  <div class="panel" style="display:grid;gap:16px">
+    <h3>Compute bill simulator <span class="tag ill">Estimate</span></h3>
     <div class="controls">
-      <div class="ctl"><label>Monthly visitors</label><div class="seg" id="cp-vis" data-values="10000,25000,50000" data-default="50000"></div></div>
-      <div class="ctl"><label for="cp-rate">Visitors who submit a form <output id="cp-rate-o"></output></label><input type="range" id="cp-rate" min="0" max="30" step="1" value="5"></div>
-      <div class="ctl"><label>Other dynamic calls per visitor</label><div class="seg" id="cp-extra" data-values="0,1,3,5,10" data-default="0"></div></div>
-      <div class="ctl"><label for="cp-cpu">Active CPU per call (ms) <output id="cp-cpu-o"></output></label><input type="range" id="cp-cpu" min="10" max="500" step="10" value="30"></div>
-      <div class="ctl"><label for="cp-dur">Duration per call (ms) <output id="cp-dur-o"></output></label><input type="range" id="cp-dur" min="100" max="3000" step="50" value="500"></div>
-      <div class="ctl"><label>Memory per instance</label><div class="seg" id="cp-ram" data-values="2,4" data-default="2" data-suffix=" GB"></div></div>
-      <div class="ctl"><label for="cp-allow">Included invocations / month</label><input type="number" id="cp-allow" min="0" step="100000" value="1000000"></div>
+      <div class="ctl"><label for="cp-visitors">Monthly visitors</label><input type="number" id="cp-visitors" min="0" step="1000" value="50000">
+        <div class="seg" id="cp-presets"><button type="button" data-v="10000">10k</button><button type="button" data-v="25000">25k</button><button type="button" data-v="50000">50k</button></div></div>
+      <div class="ctl"><label for="cp-rate">Visitors who send the form (%)</label><input type="number" id="cp-rate" min="0" max="100" step="1" value="5"></div>
     </div>
-    <div id="cp-msg"></div>
-    <div class="outs">
-      <div class="out"><span>Form submissions</span><b id="cp-forms"></b></div>
-      <div class="out"><span>Invocations</span><b id="cp-inv"></b></div>
-      <div class="out"><span>CPU-hours</span><b id="cp-cpuh"></b></div>
-      <div class="out"><span>Memory GB-hours</span><b id="cp-gbh"></b></div>
-      <div class="out"><span>CPU cost ($0.177/h)</span><b id="cp-cpuc"></b></div>
-      <div class="out"><span>Memory cost ($0.0146/GB-h)</span><b id="cp-memc"></b></div>
-      <div class="out"><span>Raw invocation cost ($0.60/M)</span><b id="cp-invraw"></b></div>
-      <div class="out hi"><span>Raw total before credits</span><b id="cp-raw"></b></div>
-      <div class="out"><span>Invocation overage after allowance</span><b id="cp-invover"></b></div>
+    <div class="grid2">
+      <div style="display:grid;gap:8px;min-width:0">
+        <span class="eyebrow">Each form submission uses (assumed)</span>
+        <ul class="facts"><li><b>30 ms</b> of CPU work (checking the form, the bot token and the reply)</li><li><b>0.5 s</b> with the server instance open, mostly waiting on Cloudflare and Zoho</li><li><b>2 GB</b> of memory for that 0.5 s (proposed Standard size)</li></ul>
+      </div>
+      <div style="display:grid;gap:8px;min-width:0">
+        <span class="eyebrow">Vercel Pro prices, London</span>
+        <ul class="facts"><li>CPU: <b>$0.177</b> per hour of active CPU</li><li>Memory: <b>$0.0146</b> per GB-hour</li><li>Calls: <b>$0.60</b> per million (none included on Pro)</li></ul>
+      </div>
     </div>
     <div class="tablewrap"><table>
-      <thead><tr><th class="n">Monthly visitors</th><th class="n">Forms / invocations</th><th class="n">CPU hours</th><th class="n">GB-hours</th><th class="n">CPU + memory USD</th></tr></thead>
+      <thead><tr><th>Step</th><th>Working</th><th class="n">Cost</th></tr></thead>
+      <tbody id="cp-steps"></tbody></table></div>
+    <div id="cp-credit"></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="n">Monthly visitors</th><th class="n">Form submissions</th><th class="n">Compute bill</th><th class="n">After $20 Pro credit</th></tr></thead>
       <tbody id="cp-table"></tbody></table></div>
-    <p class="note">The table uses your current settings for each traffic level; at the defaults it matches the planning figures (500 / 1,250 / 2,500 invocations). Memory assumes requests never overlap; real instance sharing can lower it. Not modelled: cold starts, retries, bots, server-side rendering, middleware and other overhead. CPU is capped at duration in this single-core model. The Vercel usage credit is applied in section 10.</p>
+    <ul class="facts note">
+      <li>The per-submission figures are planning assumptions, not measurements. Real numbers come from Vercel's usage dashboard after launch.</li>
+      <li>Memory is counted as if submissions never overlap. When two arrive together they share one instance, so the real memory bill is lower.</li>
+      <li>Not included: bots, retries and cold starts. At this scale they would need to be thousands of times higher to matter.</li>
+      <li>Prices from Vercel's Functions pricing and London regional pricing pages, read 25 November 2026. Excludes tax.</li>
+    </ul>
   </div>
 </section>
 
@@ -465,16 +468,12 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 
   function setOut(id, txt) { const el = $(id); if (el) el.textContent = txt; }
 
+  const CPU_MS = 30, OPEN_S = 0.5, MEM_GB = 2, CPU_RATE = 0.177, MEM_RATE = 0.0146, CALL_RATE = 0.60;
   function compute(visitors) {
-    const rate = num('cp-rate'), extra = segVal['cp-extra'];
-    let cpuMs = num('cp-cpu'); const dur = num('cp-dur'); const ram = segVal['cp-ram'];
-    const capped = cpuMs > dur; if (capped) cpuMs = dur;
-    const forms = Math.round(visitors * rate / 100);
-    const inv = forms + visitors * extra;
-    const cpuH = inv * cpuMs / 3600000, gbH = inv * dur * ram / 3600000;
-    const cpuC = cpuH * 0.177, memC = gbH * 0.0146, invRaw = inv / 1e6 * 0.60;
-    const allow = num('cp-allow'); const invOver = Math.max(0, inv - allow) / 1e6 * 0.60;
-    return { forms, inv, cpuH, gbH, cpuC, memC, invRaw, invOver, capped };
+    const calls = Math.round(visitors * num("cp-rate") / 100);
+    const cpuH = calls * CPU_MS / 3600000, gbH = calls * OPEN_S * MEM_GB / 3600;
+    const cpuC = cpuH * CPU_RATE, memC = gbH * MEM_RATE, callC = calls / 1e6 * CALL_RATE;
+    return { calls, cpuH, gbH, cpuC, memC, callC, total: cpuC + memC + callC };
   }
   function media(visitors) {
     const mb = num("bw-mb"), gb = mb * visitors / 1000, storeGB = mb / 1000;
@@ -503,12 +502,18 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     setOut("bw-flat", M.flat === null ? "Over 50 TB" : usd(M.flat));
     $("bw-table").innerHTML = [10000, 25000, 50000].map((v) => { const m = media(v); return `<tr><td class="n">${n(v)}</td><td class="n">${gbFmt(m.gb)}</td><td class="n">${usd(m.r2)}</td><td class="n">${usd(m.blob)}</td><td class="n">${m.flat === null ? "over 50 TB" : usd(m.flat)}</td></tr>`; }).join("");
     // 7
-    setOut('cp-rate-o', num('cp-rate') + '%'); setOut('cp-cpu-o', num('cp-cpu')); setOut('cp-dur-o', num('cp-dur'));
-    const C = compute(segVal['cp-vis']);
-    $('cp-msg').innerHTML = C.capped ? `<div class="warnbox">Active CPU cannot exceed duration in this single-core model, so it is capped at ${n(num('cp-dur'))} ms.</div>` : '';
-    setOut('cp-forms', n(C.forms)); setOut('cp-inv', n(C.inv)); setOut('cp-cpuh', n(C.cpuH, 6)); setOut('cp-gbh', n(C.gbH, 6));
-    setOut('cp-cpuc', usd(C.cpuC)); setOut('cp-memc', usd(C.memC)); setOut('cp-invraw', usd(C.invRaw)); setOut('cp-raw', usd(C.cpuC + C.memC + C.invRaw)); setOut('cp-invover', usd(C.invOver));
-    $('cp-table').innerHTML = [10000, 25000, 50000].map((v) => { const c = compute(v); return `<tr><td class="n">${n(v)}</td><td class="n">${n(c.inv)}</td><td class="n">${c.cpuH.toFixed(6)}</td><td class="n">${c.gbH.toFixed(6)}</td><td class="n">${(c.cpuC + c.memC).toFixed(6)}</td></tr>`; }).join('');
+    const C = compute(num("cp-visitors"));
+    const cv = num("cp-visitors"), cr = num("cp-rate");
+    $("cp-steps").innerHTML = [
+      ["1. Form submissions", n(cv) + " visitors × " + cr + "% = " + n(C.calls) + " submissions", ""],
+      ["2. CPU", n(C.calls) + " × 30 ms = " + n(C.calls * CPU_MS / 1000, 1) + " s = " + n(C.cpuH, 4) + " hours × $0.177", usd(C.cpuC)],
+      ["3. Memory", n(C.calls) + " × 0.5 s × 2 GB = " + n(C.calls * OPEN_S * MEM_GB) + " GB-seconds = " + n(C.gbH, 4) + " GB-hours × $0.0146", usd(C.memC)],
+      ["4. Calls", n(C.calls) + " × $0.60 ÷ 1,000,000", usd(C.callC)]
+    ].map((r) => `<tr><td>${r[0]}</td><td class="mono" style="font-size:13px">${r[1]}</td><td class="n mono">${r[2]}</td></tr>`).join("")
+      + `<tr class="total"><td>Compute bill</td><td class="note">per month, before the Pro credit</td><td class="n mono">${usd(C.total)}</td></tr>`;
+    const perCall = C.calls ? C.total / C.calls : (CPU_MS / 3600000 * CPU_RATE + OPEN_S * MEM_GB / 3600 * MEM_RATE + CALL_RATE / 1e6);
+    $("cp-credit").innerHTML = `<div class="okbox">Fully covered by the $20 monthly Pro usage credit. The credit would cover about ${n(Math.floor(20 / perCall))} form submissions a month at these assumptions.</div>`;
+    $("cp-table").innerHTML = [10000, 25000, 50000].map((v) => { const c = compute(v); return `<tr><td class="n">${n(v)}</td><td class="n">${n(c.calls)}</td><td class="n">${usd(c.total)}</td><td class="n">${usd(Math.max(0, c.total - 20))}</td></tr>`; }).join("");
     // 9
     setOut('db-hours-o', n(num('db-hours'))); setOut('db-gb-o', num('db-gb').toFixed(1) + ' GB');
     const N = neon(); setOut('db-cuh', n(N.cuh, 2)); setOut('db-ram', '~' + n(N.ram, 2) + ' GB'); setOut('db-cost', usd(N.cost));
@@ -516,7 +521,7 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     // 10
     const seats = Math.max(1, Math.round(num('c-seats'))), dbm = $('c-db').value;
     $('c-neon-wrap').hidden = dbm !== 'neonpaid';
-    const usage = C.cpuC + C.memC + C.invOver + num('c-other');
+    const usage = C.total + num('c-other');
     const credit = num('c-credit');
     const vercelUsage = Math.max(0, usage - credit);
     const vercel = 20 * seats + vercelUsage;
@@ -526,7 +531,7 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     const total = vercel + M.r2 + dbCost + extra + cont;
     const rows = [
       ['Vercel seats', seats + ' × $20', 20 * seats],
-      ['Vercel metered usage', 'compute ' + usd(C.cpuC + C.memC) + ' + invocation overage ' + usd(C.invOver) + ' + other ' + usd(num('c-other')) + ', less ' + usd(credit) + ' credit', vercelUsage],
+      ['Vercel metered usage', 'compute ' + usd(C.total) + ' (section 7) + other ' + usd(num('c-other')) + ', less ' + usd(credit) + ' credit', vercelUsage],
       ['Cloudflare R2 media', 'storage + delivery for ' + n(num('bw-visitors')) + ' visitors (section 6)', M.r2],
       ['Database', dbLabel, dbCost],
       ['Cloudflare Turnstile', 'free', 0],
@@ -537,12 +542,13 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     lastSummary = 'TPS website: estimated monthly provider costs (illustrative, not an invoice)\n'
       + rows.map((r) => '- ' + r[0] + ': ' + usd(r[2]) + ' (' + r[1] + ')').join('\n')
       + '\nEstimated total: ' + usd(total) + '/month'
-      + '\nAssumptions: ' + n(segVal['cp-vis']) + ' monthly visitors, ' + num('cp-rate') + '% form rate, ' + segVal['cp-extra'] + ' other dynamic calls per visitor.'
+      + '\nAssumptions: ' + n(num('cp-visitors')) + ' monthly visitors, ' + num('cp-rate') + '% send the form, media ' + num('bw-mb') + ' MB per visitor.'
       + '\nExcludes taxes, domain, SimplyBook/Zoho subscriptions, engineering fees, unmodelled CDN/edge/transfer/image optimisation, backups and support.';
     $('c-summary').textContent = lastSummary;
   }
 
   document.querySelectorAll('input, select').forEach((el) => el.addEventListener('input', update));
+  document.querySelectorAll('#cp-presets button').forEach((b) => b.addEventListener('click', () => { $('cp-visitors').value = b.dataset.v; update(); }));
   document.querySelectorAll('#bw-presets button').forEach((b) => b.addEventListener('click', () => { $('bw-visitors').value = b.dataset.v; update(); }));
   $('c-neon-sim').addEventListener('click', () => { $('c-neon').value = neon().cost.toFixed(3); update(); });
   $('c-copy').addEventListener('click', () => {
