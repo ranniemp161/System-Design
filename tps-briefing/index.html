@@ -111,7 +111,7 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 
 <nav class="toc" aria-label="Sections">
   <a href="#launch">1 Launch architecture</a><a href="#ownership">2 Ownership</a><a href="#serverless">3 Serverful vs serverless</a>
-  <a href="#fluid">4 Compute timeline</a><a href="#storage">5 Media storage</a><a href="#bandwidth">6 Bandwidth + R2</a>
+  <a href="#fluid">4 Compute timeline</a><a href="#storage">5 Media storage</a><a href="#bandwidth">6 Bandwidth bill</a>
   <a href="#compute">7 Compute cost</a><a href="#forms">8 Forms + bookings</a><a href="#database">9 Database</a>
   <a href="#costs">10 Monthly cost</a><a href="#verify">11 Verify + approve</a>
 </nav>
@@ -225,71 +225,37 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 
 <!-- 6 -->
 <section class="s" id="bandwidth">
-  <div class="shead"><span class="num">06</span><h2>Media bandwidth</h2>
-  <p>The media library is 170.15 MB. How much is delivered each month depends on how many visitors there are and how much of the library each one actually loads. Most of it should come from Cloudflare's cache; only misses reach R2. At the default settings, delivering about 1.6 TB a month through Cloudflare costs $0 in egress.</p></div>
+  <div class="shead"><span class="num">06</span><h2>Media bandwidth bill</h2>
+  <p>If every visitor loads the whole photo and video library once, how much does it cost to serve each month? The library is 170.15 MB, and the same traffic is priced on Cloudflare R2, the TPS design, and on Vercel Blob for comparison.</p></div>
   <div class="panel" style="display:grid;gap:10px">
     <h3>Media library</h3>
     <div class="bar" role="img" aria-label="Videos 143.15 MB, 84.13 percent; images 27 MB, 15.87 percent">
       <div style="width:84.13%;background:var(--cf);color:var(--bg)">Videos 143.15 MB · 84.13%</div>
       <div style="width:15.87%;background:var(--cf-soft);color:var(--cf)" title="Images 27 MB · 15.87%">Images 27 MB</div>
     </div>
-    <p class="note">Total 170.15 MB (decimal: 1 GB = 1,000 MB).</p>
   </div>
-  <div class="panel" style="display:grid;gap:14px">
-    <h3>Bandwidth simulator <span class="tag ill">Illustrative</span></h3>
+  <div class="panel" style="display:grid;gap:16px">
+    <h3>Bandwidth bill simulator <span class="tag ill">Estimate</span></h3>
     <div class="controls">
-      <div class="ctl"><label>Monthly visitors</label><div class="seg" id="bw-vis" data-values="10000,25000,50000" data-default="50000"></div></div>
-      <div class="ctl"><label for="bw-video">Video library loaded per visitor <output id="bw-video-o"></output></label><input type="range" id="bw-video" min="0" max="100" step="1" value="15"></div>
-      <div class="ctl"><label for="bw-image">Image library loaded per visitor <output id="bw-image-o"></output></label><input type="range" id="bw-image" min="0" max="100" step="1" value="40"></div>
-      <div class="ctl"><label for="bw-hit">CDN byte hit rate <output id="bw-hit-o"></output></label><input type="range" id="bw-hit" min="0" max="100" step="1" value="90"></div>
+      <div class="ctl"><label for="bw-mb">Media library size (MB)</label><input type="number" id="bw-mb" min="0" step="0.01" value="170.15"></div>
+      <div class="ctl"><label for="bw-visitors">Monthly visitors</label><input type="number" id="bw-visitors" min="0" step="1000" value="50000">
+        <div class="seg" id="bw-presets"><button type="button" data-v="10000">10k</button><button type="button" data-v="25000">25k</button><button type="button" data-v="50000">50k</button></div></div>
     </div>
-    <div class="outs">
-      <div class="out"><span>Per visitor</span><b id="bw-pv"></b></div>
-      <div class="out"><span>Video delivered</span><b id="bw-vgb"></b></div>
-      <div class="out"><span>Images delivered</span><b id="bw-igb"></b></div>
-      <div class="out hi"><span>Total delivered</span><b id="bw-tot"></b></div>
-      <div class="out"><span>From CDN cache</span><b id="bw-cache"></b></div>
-      <div class="out"><span>From R2 origin</span><b id="bw-origin"></b></div>
+    <div class="outs"><div class="out hi"><span>Media delivered per month (size × visitors)</span><b id="bw-gb"></b></div></div>
+    <div class="grid3">
+      <div class="panel" style="display:grid;gap:6px;border-color:var(--cf)"><span class="eyebrow" style="color:var(--cf)">Cloudflare R2 · TPS design</span><b class="mono" style="font-size:28px;font-weight:500" id="bw-r2"></b><span class="note">Delivery to visitors is free. Storage is free up to 10 GB.</span></div>
+      <div class="panel" style="display:grid;gap:6px"><span class="eyebrow">Vercel Blob · pay as you go</span><b class="mono" style="font-size:28px;font-weight:500" id="bw-blob"></b><span class="note">$0.05 per GB delivered + $0.024 per GB stored (London).</span></div>
+      <div class="panel" style="display:grid;gap:6px"><span class="eyebrow">Vercel Blob · Flat Rate CDN</span><b class="mono" style="font-size:28px;font-weight:500" id="bw-flat"></b><span class="note" id="bw-flat-note">First 1 TB included with Pro; $20/month tier up to 50 TB.</span></div>
     </div>
     <div class="tablewrap"><table>
-      <thead><tr><th>Scenario: full library once per visitor</th><th class="n">10,000</th><th class="n">25,000</th><th class="n">50,000</th></tr></thead>
-      <tbody><tr><td>Delivered per month</td><td class="n">1,701.5 GB</td><td class="n">4,253.75 GB</td><td class="n">8,507.5 GB</td></tr>
-      <tr><td>Your current percentages</td><td class="n" id="bw-s1"></td><td class="n" id="bw-s2"></td><td class="n" id="bw-s3"></td></tr></tbody></table></div>
-    <h3>What this bandwidth costs</h3>
-    <div class="controls">
-      <div class="ctl"><label for="bw-r2egress">R2 internet egress ($/GB)</label><input type="number" id="bw-r2egress" min="0" step="0.01" value="0"></div>
-      <div class="ctl"><label for="bw-cfplan">Cloudflare CDN plan fee ($/month)</label><input type="number" id="bw-cfplan" min="0" step="1" value="0"></div>
-      <div class="ctl"><label for="bw-vincl">Vercel included transfer (GB) <span class="tag ill">compare</span></label><input type="number" id="bw-vincl" min="0" step="100" value="1000"></div>
-      <div class="ctl"><label for="bw-vrate">Vercel transfer overage ($/GB) <span class="tag ill">compare</span></label><input type="number" id="bw-vrate" min="0" step="0.01" value="0.15"></div>
-    </div>
-    <div class="outs">
-      <div class="out"><span>R2 egress on origin traffic</span><b id="bw-c-egress"></b></div>
-      <div class="out"><span>R2 storage + operations (below)</span><b id="bw-c-ops"></b></div>
-      <div class="out hi"><span>Media delivery via Cloudflare / month</span><b id="bw-c-cf"></b></div>
-      <div class="out"><span>Same media served through Vercel (comparison)</span><b id="bw-c-v"></b></div>
-    </div>
-    <div class="tablewrap"><table>
-      <thead><tr><th>Monthly price at your current percentages</th><th class="n">10,000</th><th class="n">25,000</th><th class="n">50,000</th></tr></thead>
-      <tbody>
-        <tr><td>Media delivered</td><td class="n" id="bw-p-gb1"></td><td class="n" id="bw-p-gb2"></td><td class="n" id="bw-p-gb3"></td></tr>
-        <tr><td>Via Cloudflare R2 + CDN (TPS design)</td><td class="n" id="bw-p-cf1"></td><td class="n" id="bw-p-cf2"></td><td class="n" id="bw-p-cf3"></td></tr>
-        <tr><td>Through Vercel instead (comparison)</td><td class="n" id="bw-p-v1"></td><td class="n" id="bw-p-v2"></td><td class="n" id="bw-p-v3"></td></tr>
-      </tbody></table></div>
-    <p class="note">R2 egress is $0 under the pricing used in planning; the input lets you test other terms. The Vercel comparison rates (1,000 GB included, $0.15/GB after) are added for illustration only, are not from the planning figures, vary by region, and must be checked on Vercel's pricing page. Cloudflare video delivery terms and plan limits still need confirming.</p>
+      <thead><tr><th class="n">Monthly visitors</th><th class="n">Delivered</th><th class="n">Cloudflare R2</th><th class="n">Vercel Blob</th><th class="n">Blob + Flat Rate CDN</th></tr></thead>
+      <tbody id="bw-table"></tbody></table></div>
     <ul class="facts note">
-      <li>"Full library once" is not a maximum: repeat visits and re-downloads add more. Browser caching, partial video playback and range requests lower real usage.</li>
-      <li>R2 charges $0 for direct internet egress under the pricing used here. CDN and video delivery terms and other services may still apply; confirm them.</li>
-      <li>Keep bandwidth down with compressed video, poster images and careful preload settings, and make sure media does not pass through Vercel's image optimisation by accident.</li></ul>
-  </div>
-  <div class="panel" style="display:grid;gap:14px">
-    <h3>R2 storage and operations cost <span class="tag ill">Illustrative rates</span></h3>
-    <div class="controls">
-      <div class="ctl"><label for="r2-gb">Storage (GB)</label><input type="number" id="r2-gb" min="0" step="0.01" value="0.17015"></div>
-      <div class="ctl"><label for="r2-a">Class A operations / month (writes)</label><input type="number" id="r2-a" min="0" step="1000" value="1000"></div>
-      <div class="ctl"><label for="r2-b">Class B operations / month (reads)</label><input type="number" id="r2-b" min="0" step="1000" value="100000"></div>
-    </div>
-    <div class="outs"><div class="out"><span>Storage over 10 GB free</span><b id="r2-cs"></b></div><div class="out"><span>Class A over 1M free</span><b id="r2-ca"></b></div><div class="out"><span>Class B over 10M free</span><b id="r2-cb"></b></div><div class="out hi"><span>Estimated R2 / month</span><b id="r2-tot"></b></div></div>
-    <p class="note">Rates: $0.015 per GB-month, $4.50 per million Class A, $0.36 per million Class B, Standard storage only. Provider rounding may differ. The byte hit rate above says nothing about request counts, so operation counts are entered separately here.</p>
+      <li>Simple model: every visitor loads the full library once. Real usage is usually lower (browser caching, videos not watched to the end) but can be higher with repeat visits.</li>
+      <li>Request/operation charges are left out. At this traffic they are small, and on R2 they fall inside the free monthly allowance.</li>
+      <li>Flat Rate CDN is an opt-in Vercel Pro setting. Its 1 TB is shared with the website's own page traffic, and Vercel may exclude sites where media delivery is most of the bandwidth, so the pay-as-you-go column is the safer comparison.</li>
+      <li>Prices from Cloudflare's R2 pricing page and Vercel's Blob, Flat Rate CDN and London regional pricing pages, read 25 November 2026. Excludes tax.</li>
+    </ul>
   </div>
 </section>
 
@@ -510,9 +476,12 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     const allow = num('cp-allow'); const invOver = Math.max(0, inv - allow) / 1e6 * 0.60;
     return { forms, inv, cpuH, gbH, cpuC, memC, invRaw, invOver, capped };
   }
-  function r2() {
-    const s = Math.max(0, num('r2-gb') - 10) * 0.015, a = Math.max(0, num('r2-a') - 1e6) / 1e6 * 4.50, b = Math.max(0, num('r2-b') - 1e7) / 1e6 * 0.36;
-    return { s, a, b, t: s + a + b };
+  function media(visitors) {
+    const mb = num("bw-mb"), gb = mb * visitors / 1000, storeGB = mb / 1000;
+    const r2 = Math.max(0, storeGB - 10) * 0.015;
+    const blob = gb * 0.05 + storeGB * 0.024;
+    const flat = gb <= 1000 ? storeGB * 0.024 : gb <= 50000 ? 20 + storeGB * 0.024 : null;
+    return { gb, r2, blob, flat };
   }
   function neon() {
     const h = num('db-hours'), cu = segVal['db-cu'], gb = num('db-gb');
@@ -529,18 +498,10 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     $('mb-meter').classList.toggle('over', buf > 2000);
     $('mb-msg').innerHTML = buf > 2000 ? `<div class="warnbox">Exceeds the 2,000 MB reference instance by ${n(buf - 2000)} MB. Fully buffered files at this load would not fit.</div>` : `<div class="okbox">Fits within the 2,000 MB reference instance.</div>`;
     // 6
-    const vis = segVal['bw-vis'], vp = num('bw-video'), ip = num('bw-image'), hit = num('bw-hit');
-    setOut('bw-video-o', vp + '%'); setOut('bw-image-o', ip + '%'); setOut('bw-hit-o', hit + '%');
-    const pv = 143.15 * vp / 100 + 27 * ip / 100;
-    const vgb = vis * 143.15 * vp / 100 / 1000, igb = vis * 27 * ip / 100 / 1000, tot = vgb + igb, cached = tot * hit / 100;
-    setOut('bw-pv', n(pv, 4) + ' MB'); setOut('bw-vgb', gbFmt(vgb)); setOut('bw-igb', gbFmt(igb)); setOut('bw-tot', gbFmt(tot)); setOut('bw-cache', gbFmt(cached)); setOut('bw-origin', gbFmt(tot - cached));
-    [10000, 25000, 50000].forEach((v, i) => setOut('bw-s' + (i + 1), n(v * pv / 1000, 4) + ' GB'));
-    const R2 = r2(); setOut('r2-cs', usd(R2.s)); setOut('r2-ca', usd(R2.a)); setOut('r2-cb', usd(R2.b)); setOut('r2-tot', usd(R2.t));
-    const egr = num('bw-r2egress'), cfPlan = num('bw-cfplan'), vIncl = num('bw-vincl'), vRate = num('bw-vrate');
-    const cfCost = (totGB) => totGB * (1 - hit / 100) * egr + R2.t + cfPlan;
-    const vCost = (totGB) => Math.max(0, totGB - vIncl) * vRate;
-    setOut('bw-c-egress', usd((tot - cached) * egr)); setOut('bw-c-ops', usd(R2.t)); setOut('bw-c-cf', usd(cfCost(tot))); setOut('bw-c-v', usd(vCost(tot)));
-    [10000, 25000, 50000].forEach((v, i) => { const g = v * pv / 1000; setOut('bw-p-gb' + (i + 1), gbFmt(g)); setOut('bw-p-cf' + (i + 1), usd(cfCost(g))); setOut('bw-p-v' + (i + 1), usd(vCost(g))); });
+    const M = media(num("bw-visitors"));
+    setOut("bw-gb", gbFmt(M.gb)); setOut("bw-r2", usd(M.r2)); setOut("bw-blob", usd(M.blob));
+    setOut("bw-flat", M.flat === null ? "Over 50 TB" : usd(M.flat));
+    $("bw-table").innerHTML = [10000, 25000, 50000].map((v) => { const m = media(v); return `<tr><td class="n">${n(v)}</td><td class="n">${gbFmt(m.gb)}</td><td class="n">${usd(m.r2)}</td><td class="n">${usd(m.blob)}</td><td class="n">${m.flat === null ? "over 50 TB" : usd(m.flat)}</td></tr>`; }).join("");
     // 7
     setOut('cp-rate-o', num('cp-rate') + '%'); setOut('cp-cpu-o', num('cp-cpu')); setOut('cp-dur-o', num('cp-dur'));
     const C = compute(segVal['cp-vis']);
@@ -562,13 +523,11 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     const dbCost = dbm === 'neonpaid' ? num('c-neon') : dbm === 'supa' ? 25 : 0;
     const dbLabel = { none: 'None', neonfree: 'Neon Free (verify eligibility)', neonpaid: 'Neon paid usage', supa: 'Supabase Pro (illustrative)' }[dbm];
     const extra = num('c-extra'), cont = num('c-cont');
-    const mediaEgress = (tot - cached) * egr + cfPlan;
-    const total = vercel + R2.t + mediaEgress + dbCost + extra + cont;
+    const total = vercel + M.r2 + dbCost + extra + cont;
     const rows = [
       ['Vercel seats', seats + ' × $20', 20 * seats],
       ['Vercel metered usage', 'compute ' + usd(C.cpuC + C.memC) + ' + invocation overage ' + usd(C.invOver) + ' + other ' + usd(num('c-other')) + ', less ' + usd(credit) + ' credit', vercelUsage],
-      ['Cloudflare R2', 'storage + operations from section 6', R2.t],
-      ['Cloudflare media delivery', 'R2 egress + CDN plan fee from section 6', mediaEgress],
+      ['Cloudflare R2 media', 'storage + delivery for ' + n(num('bw-visitors')) + ' visitors (section 6)', M.r2],
       ['Database', dbLabel, dbCost],
       ['Cloudflare Turnstile', 'free', 0],
       ['Other optional costs', 'entered', extra],
@@ -584,6 +543,7 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
   }
 
   document.querySelectorAll('input, select').forEach((el) => el.addEventListener('input', update));
+  document.querySelectorAll('#bw-presets button').forEach((b) => b.addEventListener('click', () => { $('bw-visitors').value = b.dataset.v; update(); }));
   $('c-neon-sim').addEventListener('click', () => { $('c-neon').value = neon().cost.toFixed(3); update(); });
   $('c-copy').addEventListener('click', () => {
     const msg = $('c-copy-msg');
