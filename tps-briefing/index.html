@@ -174,6 +174,47 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     <div class="tablewrap"><svg id="capchart" viewBox="0 0 760 260" width="100%" role="img" aria-label="Illustrative chart: a flat VPS capacity line sits above a fluctuating demand curve; serverless billing follows the demand curve."></svg></div>
     <p class="note">The gap between the flat line and the curve is capacity a VPS bills for but nobody uses. At sustained high demand that gap closes, and the per-unit serverless rate can make it the more expensive option.</p>
   </div>
+  <div class="panel" style="display:grid;gap:14px" id="economics">
+    <h3>When is each cheaper? <span class="tag ill">Compute only</span></h3>
+    <p>The same 1 vCPU / 2 GB of capacity priced both ways. A VPS costs the same whatever it does. Serverless costs grow with how much of the month your code is actually running.</p>
+    <div class="tablewrap"><svg id="bechart" viewBox="0 0 760 300" width="100%" role="img" aria-label="Monthly cost against share of the month the server is busy: VPS flat at 12 dollars, Vercel rising to about 150 dollars at 100 percent, crossing near 8 percent."></svg></div>
+    <div class="controls">
+      <div class="ctl"><label for="be-busy">Share of the month the code is busy <output id="be-busy-o"></output></label><input type="range" id="be-busy" min="0" max="100" step="0.5" value="8"></div>
+      <div class="ctl"><label for="be-vps">VPS monthly price (USD)</label><input type="number" id="be-vps" min="0" step="1" value="12"></div>
+    </div>
+    <div class="outs">
+      <div class="out"><span>VPS (DigitalOcean Basic)</span><b id="be-o-vps"></b></div>
+      <div class="out"><span>Vercel Functions (London)</span><b id="be-o-vercel"></b></div>
+      <div class="out hi"><span>Cheaper at this level</span><b id="be-o-win"></b></div>
+      <div class="out"><span>Break-even</span><b id="be-o-even"></b></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Scenario</th><th class="n">Busy</th><th class="n">VPS</th><th class="n">Vercel</th></tr></thead>
+      <tbody>
+        <tr><td>Idle all month</td><td class="n">0%</td><td class="n">$12.00</td><td class="n">$0.00</td></tr>
+        <tr><td>TPS at 50k visitors (2,500 form submissions)</td><td class="n">~0.003%</td><td class="n">$12.00</td><td class="n">$0.02</td></tr>
+        <tr><td>Busy about 2 hours a day</td><td class="n">~8%</td><td class="n">$12.00</td><td class="n">~$12</td></tr>
+        <tr><td>Busy 24/7</td><td class="n">100%</td><td class="n">$12.00</td><td class="n">~$150.53</td></tr>
+      </tbody></table></div>
+    <p class="note">Vercel at 100%: 730 h × $0.177 CPU + 730 h × 2 GB × $0.0146 memory = $150.53. Assumes memory is open only while code runs. VPS: DigitalOcean Basic 1 vCPU / 2 GB at $12, billed per second and capped at 672 hours a month, and still billed when powered off. A Basic Droplet's vCPU is shared, so this is a rough match. Leaves out labor and Vercel's $20 seat. Prices read 25 November 2026.</p>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>The trade-offs</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>VPS (serverful)</th><th>Serverless (Vercel)</th></tr></thead>
+      <tbody>
+        <tr><td>Bill</td><td>Fixed and predictable, capped at the plan price</td><td>Tracks usage; near zero at low traffic, uncapped unless you set a spend limit</td></tr>
+        <tr><td>Traffic spike or bot attack</td><td>Bill stays the same; site may slow down or go offline</td><td>Site stays up; bill rises (use firewall rate limits and a spend limit)</td></tr>
+        <tr><td>Price per unit of compute</td><td>Low when busy</td><td>Over 10× higher at full use</td></tr>
+        <tr><td>Response speed</td><td>Always on, no cold starts</td><td>Occasional slower first request after quiet periods</td></tr>
+        <tr><td>Long jobs and always-on processes</td><td>Supported by default</td><td>Per-call time limit (300 s default); always-on work needs extra products</td></tr>
+        <tr><td>Data kept between requests</td><td>Can stay in memory</td><td>Needs a separate database or cache, each billed separately</td></tr>
+        <tr><td>Operations work</td><td>You handle firewall, TLS, OS patches, backups, monitoring, scaling, outages</td><td>Provider handles them; you ship application code</td></tr>
+        <tr><td>Lock-in</td><td>Low; any Linux host works</td><td>Higher; code and configuration follow Vercel's conventions</td></tr>
+        <tr><td>Best fit</td><td>Steady heavy load, always-on APIs, background workers</td><td>Low or uneven traffic, small teams, sites like the TPS launch</td></tr>
+      </tbody></table></div>
+    <div class="callout">For TPS the code is busy about 0.003% of the month, far below the ~8% break-even. Counting the hosting bill and the time spent running servers, serverless is the cheaper choice for the launch. A future always-on CRM API may tip the other way, and many systems mix the two.</div>
+  </div>
 </section>
 
 <!-- 4 -->
@@ -487,8 +528,39 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     const cuh = h * cu; return { cuh, ram: cu * 4, cost: cuh * 0.106 + gb * 0.35, free: cuh <= 100 && gb <= 1 };
   }
 
+  function drawBreakeven() {
+    const svg = $("bechart"); if (!svg) return;
+    const FULL = 730 * 0.177 + 730 * 2 * 0.0146;
+    const vps = num("be-vps"), busy = num("be-busy"), even = Math.min(100, vps / FULL * 100);
+    const W = 760, H = 300, L = 56, R = 20, T = 20, B = 44, ymax = 160;
+    const x = (p) => L + (W - L - R) * p / 100, y = (d) => T + (H - T - B) * (1 - Math.min(d, ymax) / ymax);
+    let g = "";
+    [0, 40, 80, 120, 160].forEach((d) => { g += `<line x1="${L}" x2="${W - R}" y1="${y(d)}" y2="${y(d)}" stroke="var(--line)"/><text x="${L - 8}" y="${y(d) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">$${d}</text>`; });
+    [0, 25, 50, 75, 100].forEach((p) => { g += `<text x="${x(p)}" y="${H - 24}" text-anchor="middle" font-size="11" fill="var(--muted)">${p}%</text>`; });
+    g += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">share of the month the code is busy</text>`;
+    g += `<polygon points="${x(0)},${y(0)} ${x(even)},${y(vps)} ${x(0)},${y(vps)}" fill="var(--db-soft)"/>`;
+    g += `<line x1="${x(0)}" y1="${y(vps)}" x2="${x(100)}" y2="${y(vps)}" stroke="var(--ink)" stroke-width="2.5"/>`;
+    g += `<line x1="${x(0)}" y1="${y(0)}" x2="${x(100)}" y2="${y(FULL)}" stroke="var(--accent)" stroke-width="2.5"/>`;
+    g += `<text x="${x(100) - 4}" y="${y(vps) - 8}" text-anchor="end" font-size="12" font-weight="600" fill="var(--ink)">VPS: $${n(vps, 2)} flat</text>`;
+    g += `<text x="${x(62)}" y="${y(FULL * 0.62) - 12}" text-anchor="end" font-size="12" font-weight="600" fill="var(--accent)">Vercel: rises to $${n(FULL, 2)} at 100%</text>`;
+    g += `<line x1="${x(even)}" y1="${T}" x2="${x(even)}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="4 3"/><circle cx="${x(even)}" cy="${y(vps)}" r="5" fill="var(--ink)"/>`;
+    g += `<text x="${x(even) + 8}" y="${T + 14}" font-size="12" font-weight="600" fill="var(--ink)">break-even ~${n(even, 1)}% busy</text>`;
+    g += `<text x="${x(even) + 8}" y="${T + 32}" font-size="11" font-weight="600" fill="var(--db)">← serverless cheaper below</text>`;
+    g += `<text x="${x(even) + 8}" y="${T + 48}" font-size="11" font-weight="600" fill="var(--muted)">VPS cheaper above →</text>`;
+    g += `<line x1="${x(0.003)}" y1="${y(0)}" x2="${x(0.003)}" y2="${y(70)}" stroke="var(--cf)" stroke-width="1"/><circle cx="${x(0.003)}" cy="${y(0)}" r="5" fill="var(--cf)"/>`;
+    g += `<text x="${x(0.003) + 6}" y="${y(70) - 4}" font-size="11" font-weight="600" fill="var(--cf)">TPS: ~0.003% busy</text>`;
+    const vb = FULL * busy / 100;
+    g += `<line x1="${x(busy)}" y1="${T}" x2="${x(busy)}" y2="${y(0)}" stroke="var(--accent)" stroke-opacity="0.35"/><circle cx="${x(busy)}" cy="${y(vb)}" r="4.5" fill="var(--accent)"/>`;
+    svg.innerHTML = g;
+    setOut("be-busy-o", n(busy, 1) + "% (" + n(busy / 100 * 24, 1) + " h/day)");
+    setOut("be-o-vps", usd(vps)); setOut("be-o-vercel", usd(vb));
+    setOut("be-o-win", Math.abs(vb - vps) < 0.005 ? "About equal" : vb < vps ? "Serverless" : "VPS");
+    setOut("be-o-even", n(even, 1) + "% busy (~" + n(even / 100 * 24, 1) + " h/day)");
+  }
+
   let lastSummary = '';
   function update() {
+    drawBreakeven();
     // 5
     const conc = num('mb-conc'), size = num('mb-size'), buf = conc * size;
     setOut('mb-conc-o', n(conc)); setOut('mb-size-o', size + ' MB');
