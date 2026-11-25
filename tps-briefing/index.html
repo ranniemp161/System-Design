@@ -94,8 +94,41 @@ pre.summary { font-family: var(--f-mono); font-size: 12.5px; background: var(--s
 ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
 @media (max-width: 600px) { .frame { height: 620px } }
+
+body { font-size: 16px; line-height: 1.6 }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px))); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 21; background: var(--bg) }
+.topbar nav { max-width: 1080px; margin: 0 auto; display: flex; gap: 4px; overflow-x: auto; padding-block: 10px; scrollbar-width: none }
+.topbar nav::-webkit-scrollbar { display: none }
+.topbar a { flex: none; font-size: 13px; text-decoration: none; color: var(--muted); padding: 5px 10px; border-radius: 6px; white-space: nowrap }
+.topbar a:hover, .topbar a:focus-visible { color: var(--ink); background: var(--soft); outline: none }
+.topbar a.on { color: var(--bg); background: var(--ink) }
+html { scroll-padding-top: 64px; scroll-behavior: smooth }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto } }
+.glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 4px; min-width: 0 }
+.tile b { font-family: var(--f-display); font-size: 30px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums }
+.tile span { font-size: 14px; color: var(--muted) }
+.tile.cf b { color: var(--cf) } .tile.db b { color: var(--db) }
+.verdict { background: var(--accent-soft); border-radius: 10px; padding: 16px 18px; font-size: 17px; line-height: 1.5 }
+.verdict strong { font-family: var(--f-display) }
+.part { padding-block: 56px 0; display: grid; gap: 4px }
+.part .eyebrow { color: var(--accent) }
+.part h2 { font-size: clamp(26px, 3.4vw, 34px) }
+.takeaway { border-left: 4px solid var(--accent); background: var(--panel); padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 16px; max-width: none }
+.takeaway b { font-family: var(--f-display) }
+figure.dia { margin: 0; display: grid; gap: 8px }
+figure.dia .canvas { display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto }
+figure.dia img { display: block; width: 100%; height: auto; min-width: 560px }
+figure.dia figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 6px 16px; flex-wrap: wrap; font-size: 14px; color: var(--muted) }
+figure.dia figcaption a { font-weight: 600; white-space: nowrap }
+details.fine { border-top: 1px dashed var(--line); padding-top: 8px }
+details.fine summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--accent) }
+details.fine[open] summary { margin-bottom: 8px }
+section.s { padding-block: 44px }
 </style>
 
+<div class="topbar"><nav aria-label="Sections"><a href="#launch">1 Architecture</a><a href="#ownership">2 Ownership</a><a href="#serverless">3 Server vs serverless</a><a href="#fluid">4 Compute timeline</a><a href="#storage">5 Media storage</a><a href="#bandwidth">6 Bandwidth bill</a><a href="#compute">7 Compute bill</a><a href="#forms">8 Forms + bookings</a><a href="#database">9 Database</a><a href="#costs">10 Monthly cost</a><a href="#verify">11 Approve</a></nav></div>
 <div class="wrap">
 <header class="top">
   <div class="eyebrow">Architecture briefing · public website launch</div>
@@ -106,22 +139,25 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     <span style="--c: var(--cf)">Cloudflare (media, bot check)</span>
     <span style="--c: var(--db)">Database (optional)</span>
   </div>
-  <p class="note"><span class="tag conf">Confirmed</span> agreed scope &nbsp; <span class="tag prop">Proposed</span> recommended configuration awaiting approval &nbsp; <span class="tag ill">Illustrative</span> modelled figures, not measured. Provider rates on this page come from planning and have not been re-checked against current price lists (see section 11).</p>
+  <p class="note"><span class="tag conf">Confirmed</span> agreed scope &nbsp; <span class="tag prop">Proposed</span> awaiting approval &nbsp; <span class="tag ill">Estimate</span> modelled, not measured. Prices for Cloudflare R2, Vercel Blob, Vercel Functions and DigitalOcean were checked on 25 November 2026; other rates come from planning (section 11).</p>
+  <div class="glance" aria-label="At a glance">
+    <div class="tile"><b>~$20<small style="font-size:15px;font-weight:500">/mo</small></b><span>Expected provider bill at launch (one Vercel Pro seat)</span></div>
+    <div class="tile cf"><b>$0</b><span>Serving photos and videos from Cloudflare R2</span></div>
+    <div class="tile"><b>$0.02</b><span>Server compute at 50,000 visitors a month</span></div>
+    <div class="tile db"><b>Optional</b><span>Database: only if TPS wants its own records</span></div>
+  </div>
+  <p class="verdict"><strong>Recommendation:</strong> host the website on Vercel (serverless), keep media in Cloudflare R2, and keep every account in TPS's name. No server to rent or maintain, and the launch bill is essentially the $20 Vercel seat.</p>
 </header>
 
-<nav class="toc" aria-label="Sections">
-  <a href="#launch">1 Launch architecture</a><a href="#ownership">2 Ownership</a><a href="#serverless">3 Serverful vs serverless</a>
-  <a href="#fluid">4 Compute timeline</a><a href="#storage">5 Media storage</a><a href="#bandwidth">6 Bandwidth bill</a>
-  <a href="#compute">7 Compute bill</a><a href="#forms">8 Forms + bookings</a><a href="#database">9 Database</a>
-  <a href="#costs">10 Monthly cost</a><a href="#verify">11 Verify + approve</a>
-</nav>
+
 
 <!-- 1 -->
+<div class="part"><span class="eyebrow">Part 1</span><h2>What we are building</h2></div>
 <section class="s" id="launch">
   <div class="shead"><span class="num">01</span><h2>Launch architecture</h2>
   <p>Visitors reach three separate services: Vercel for the website pages and the consultation form, Cloudflare for photos and videos, and SimplyBook for treatment bookings. Most page views are served from cache and run no application code at all.</p></div>
-  <div class="framebar"><span>Interactive: pick a guided view (pages, media, enquiry, booking, database), click a box and choose Explain for detail, or click Cloudflare or the form boxes to open their detail diagrams.</span><a href="diagrams/launch.html" target="_blank" rel="noopener">Open full screen</a></div>
-  <iframe class="frame" src="diagrams/launch.html" title="TPS launch architecture diagram" loading="lazy"></iframe>
+  <p class="takeaway"><b>Bottom line:</b> Three managed services and no servers to run. Pages come from cache; only the consultation form runs code.</p>
+  <figure class="dia"><a class="canvas" href="diagrams/launch.html" target="_blank" rel="noopener"><img src="diagrams/launch.svg" alt="Interactive: pick a guided view (pages, media, enquiry, booking, database), click a box and choose Explain for detail, or click Cloudflare or the form boxes to open their detail diagrams." loading="lazy"></a><figcaption><span>The interactive version has guided views (pages, media, enquiry, booking, database) and an Explain panel on every box.</span><a href="diagrams/launch.html" target="_blank" rel="noopener">Open interactive diagram ↗</a></figcaption></figure>
   <div class="grid3">
     <div class="panel"><h3><span class="tag conf">Confirmed</span></h3><ul class="facts">
       <li>Next.js static pages served by Vercel's edge network</li>
@@ -143,8 +179,8 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 <section class="s" id="ownership">
   <div class="shead"><span class="num">02</span><h2>Who owns what</h2>
   <p>TPS owns the domain, every provider account, the production data and the billing. The developer works inside those accounts with role-based access. Think of a house: TPS owns the land and pays for materials and utilities, and the developer builds and maintains it under contract.</p></div>
-  <div class="framebar"><span>Ownership and access diagram</span><a href="diagrams/ownership.html" target="_blank" rel="noopener">Open full screen</a></div>
-  <iframe class="frame" src="diagrams/ownership.html" title="Ownership diagram" loading="lazy"></iframe>
+  <p class="takeaway"><b>Bottom line:</b> TPS owns every account, the domain, the data and the bills. The developer works with access TPS can remove at any time.</p>
+  <figure class="dia"><a class="canvas" href="diagrams/ownership.html" target="_blank" rel="noopener"><img src="diagrams/ownership.svg" alt="Ownership and access diagram" loading="lazy"></a><figcaption><span>Ownership and access diagram</span><a href="diagrams/ownership.html" target="_blank" rel="noopener">Open interactive diagram ↗</a></figcaption></figure>
   <div class="tablewrap panel"><table>
     <thead><tr><th>Cost type</th><th>Who bills TPS</th><th>Covers</th></tr></thead>
     <tbody>
@@ -156,11 +192,12 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 </section>
 
 <!-- 3 -->
+<div class="part"><span class="eyebrow">Part 2</span><h2>How it runs</h2></div>
 <section class="s" id="serverless">
   <div class="shead"><span class="num">03</span><h2>Rented server vs serverless</h2>
   <p>A rented server (VPS) is a machine of fixed size that is billed whether or not anyone visits. Serverless means the provider runs the operating system and scaling, and bills a plan fee plus what is actually used. Neither is always cheaper: under heavy, steady load a VPS can cost less.</p></div>
-  <div class="framebar"><span>The same request on a rented server (top) and on Vercel (bottom). Dashed arrows show which pieces Vercel absorbs.</span><a href="diagrams/serverful.html" target="_blank" rel="noopener">Open full screen</a></div>
-  <iframe class="frame" src="diagrams/serverful.html" title="Serverful vs serverless architecture diagram" loading="lazy"></iframe>
+  <p class="takeaway"><b>Bottom line:</b> For a site this size, serverless costs less overall: about $0.02 a month in compute against $12 for the smallest suitable server, with nothing to maintain.</p>
+  <figure class="dia"><a class="canvas" href="diagrams/serverful.html" target="_blank" rel="noopener"><img src="diagrams/serverful.svg" alt="The same request on a rented server (top) and on Vercel (bottom). Dashed arrows show which pieces Vercel absorbs." loading="lazy"></a><figcaption><span>The same request on a rented server (top) and on Vercel (bottom). Dashed arrows show which pieces Vercel absorbs.</span><a href="diagrams/serverful.html" target="_blank" rel="noopener">Open interactive diagram ↗</a></figcaption></figure>
   <div class="grid2">
     <div class="panel" style="display:grid;gap:10px"><h3>VPS (serverful)</h3>
       <div class="stack"><div class="app">Application</div><div>Runtime (Node.js)</div><div>Reverse proxy (TLS, routing)</div><div>Operating system + patches</div><div>Allocated CPU / RAM</div></div>
@@ -196,7 +233,7 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
         <tr><td>Busy about 2 hours a day</td><td class="n">~8%</td><td class="n">$12.00</td><td class="n">~$12</td></tr>
         <tr><td>Busy 24/7</td><td class="n">100%</td><td class="n">$12.00</td><td class="n">~$150.53</td></tr>
       </tbody></table></div>
-    <p class="note">Vercel at 100%: 730 h × $0.177 CPU + 730 h × 2 GB × $0.0146 memory = $150.53. Assumes memory is open only while code runs. VPS: DigitalOcean Basic 1 vCPU / 2 GB at $12, billed per second and capped at 672 hours a month, and still billed when powered off. A Basic Droplet's vCPU is shared, so this is a rough match. Leaves out labor and Vercel's $20 seat. Prices read 25 November 2026.</p>
+    <details class="fine"><summary>Assumptions and sources</summary><p class="note">Vercel at 100%: 730 h × $0.177 CPU + 730 h × 2 GB × $0.0146 memory = $150.53. Assumes memory is open only while code runs. VPS: DigitalOcean Basic 1 vCPU / 2 GB at $12, billed per second and capped at 672 hours a month, and still billed when powered off. A Basic Droplet's vCPU is shared, so this is a rough match. Leaves out labor and Vercel's $20 seat. Prices read 25 November 2026.</p></details>
   </div>
   <div class="panel" style="display:grid;gap:10px">
     <h3>The trade-offs</h3>
@@ -221,8 +258,8 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 <section class="s" id="fluid">
   <div class="shead"><span class="num">04</span><h2>What one form submission costs to run</h2>
   <p>A form submission takes about half a second, but the processor is busy for only a fraction of it. The rest is waiting for Cloudflare and Zoho to answer. With Vercel Fluid Compute, CPU is billed only while it is active, and other requests can use the same instance while one waits.</p></div>
-  <div class="framebar"><span>Billing waterfall: one instance handling two form submissions at once. Purple = CPU billed, orange = waiting (not billed).</span><a href="diagrams/fluid.html" target="_blank" rel="noopener">Open full screen</a></div>
-  <iframe class="frame" src="diagrams/fluid.html" title="Fluid Compute billing waterfall" loading="lazy" style="height:900px"></iframe>
+  <p class="takeaway"><b>Bottom line:</b> Vercel bills CPU only while code is working, not while it waits. A form submission uses about 30 ms of billed CPU.</p>
+  <figure class="dia"><a class="canvas" href="diagrams/fluid.html" target="_blank" rel="noopener"><img src="diagrams/fluid.svg" alt="Billing waterfall: one instance handling two form submissions at once. Purple = CPU billed, orange = waiting (not billed)." loading="lazy"></a><figcaption><span>Billing waterfall: one instance handling two form submissions at once. Purple = CPU billed, orange = waiting (not billed).</span><a href="diagrams/fluid.html" target="_blank" rel="noopener">Open interactive diagram ↗</a></figcaption></figure>
   <div class="panel" style="display:grid;gap:10px">
     <h3>500 ms request timeline <span class="tag ill">Illustrative</span></h3>
     <div class="tablewrap"><svg id="timeline" viewBox="0 0 760 250" width="100%" role="img" aria-label="Timeline of a 500 ms request: three 10 ms CPU slices totalling 30 ms, 470 ms waiting on external services, and 2 GB memory allocated for the full 500 ms."></svg></div>
@@ -249,8 +286,8 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 <section class="s" id="storage">
   <div class="shead"><span class="num">05</span><h2>Why media lives in object storage, not the database</h2>
   <p>Photos and videos could be stored inside the database, but every uncached view would then push the whole file through the application and database. Keeping media in R2 behind Cloudflare's CDN takes those bytes off the TPS application path.</p></div>
-  <div class="framebar"><span>Path A vs path B</span><a href="diagrams/media.html" target="_blank" rel="noopener">Open full screen</a></div>
-  <iframe class="frame" src="diagrams/media.html" title="Database-backed vs direct object media delivery" loading="lazy"></iframe>
+  <p class="takeaway"><b>Bottom line:</b> Photos and videos live in Cloudflare R2, so they never pass through the TPS application or database.</p>
+  <figure class="dia"><a class="canvas" href="diagrams/media.html" target="_blank" rel="noopener"><img src="diagrams/media.svg" alt="Path A vs path B" loading="lazy"></a><figcaption><span>Path A vs path B</span><a href="diagrams/media.html" target="_blank" rel="noopener">Open interactive diagram ↗</a></figcaption></figure>
   <div class="panel" style="display:grid;gap:14px">
     <h3>Memory buffer simulator (path A)</h3>
     <div class="controls">
@@ -260,14 +297,16 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     <div class="outs"><div class="out hi"><span>Buffered in memory</span><b id="mb-out"></b></div><div class="out"><span>Share of 2,000 MB instance</span><b id="mb-pct"></b></div></div>
     <div class="meter" id="mb-meter"><i></i></div>
     <div id="mb-msg"></div>
-    <p class="note">Formula: concurrent requests × file size. Assumes every file is fully buffered in one instance. Streaming, how requests spread across instances, and runtime overhead all change real memory use. Example: 100 × 2 MB = 200 MB. A 2 MB image is 1,000× the payload of a 2 KB record; that is a size ratio, not a CPU or latency ratio.</p>
+    <details class="fine"><summary>Assumptions and sources</summary><p class="note">Formula: concurrent requests × file size. Assumes every file is fully buffered in one instance. Streaming, how requests spread across instances, and runtime overhead all change real memory use. Example: 100 × 2 MB = 200 MB. A 2 MB image is 1,000× the payload of a 2 KB record; that is a size ratio, not a CPU or latency ratio.</p></details>
   </div>
 </section>
 
 <!-- 6 -->
+<div class="part"><span class="eyebrow">Part 3</span><h2>What it costs to run</h2></div>
 <section class="s" id="bandwidth">
   <div class="shead"><span class="num">06</span><h2>Media bandwidth bill</h2>
   <p>If every visitor loads the whole photo and video library once, how much does it cost to serve each month? The library is 170.15 MB, and the same traffic is priced on Cloudflare R2, the TPS design, and on Vercel Blob for comparison.</p></div>
+  <p class="takeaway"><b>Bottom line:</b> Serving the media costs $0 on Cloudflare R2, against up to $425 a month on Vercel Blob at 50,000 visitors.</p>
   <div class="panel" style="display:grid;gap:10px">
     <h3>Media library</h3>
     <div class="bar" role="img" aria-label="Videos 143.15 MB, 84.13 percent; images 27 MB, 15.87 percent">
@@ -291,12 +330,12 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     <div class="tablewrap"><table>
       <thead><tr><th class="n">Monthly visitors</th><th class="n">Delivered</th><th class="n">Cloudflare R2</th><th class="n">Vercel Blob</th><th class="n">Blob + Flat Rate CDN</th></tr></thead>
       <tbody id="bw-table"></tbody></table></div>
-    <ul class="facts note">
+    <details class="fine"><summary>Assumptions and sources</summary><ul class="facts note">
       <li>Simple model: every visitor loads the full library once. Real usage is usually lower (browser caching, videos not watched to the end) but can be higher with repeat visits.</li>
       <li>Request/operation charges are left out. At this traffic they are small, and on R2 they fall inside the free monthly allowance.</li>
       <li>Flat Rate CDN is an opt-in Vercel Pro setting. Its 1 TB is shared with the website's own page traffic, and Vercel may exclude sites where media delivery is most of the bandwidth, so the pay-as-you-go column is the safer comparison.</li>
       <li>Prices from Cloudflare's R2 pricing page and Vercel's Blob, Flat Rate CDN and London regional pricing pages, read 25 November 2026. Excludes tax.</li>
-    </ul>
+    </ul></details>
   </div>
 </section>
 
@@ -304,6 +343,7 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 <section class="s" id="compute">
   <div class="shead"><span class="num">07</span><h2>Compute bill</h2>
   <p>Server code runs only when someone sends the consultation form. Browsing cached pages runs no code and costs nothing in compute. This simulator works out the bill for the form handler, step by step.</p></div>
+  <p class="takeaway"><b>Bottom line:</b> About $0.02 a month at 50,000 visitors, fully covered by Vercel's $20 monthly credit.</p>
   <div class="panel" style="display:grid;gap:16px">
     <h3>Compute bill simulator <span class="tag ill">Estimate</span></h3>
     <div class="controls">
@@ -328,21 +368,22 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     <div class="tablewrap"><table>
       <thead><tr><th class="n">Monthly visitors</th><th class="n">Form submissions</th><th class="n">Compute bill</th><th class="n">After $20 Pro credit</th></tr></thead>
       <tbody id="cp-table"></tbody></table></div>
-    <ul class="facts note">
+    <details class="fine"><summary>Assumptions and sources</summary><ul class="facts note">
       <li>The per-submission figures are planning assumptions, not measurements. Real numbers come from Vercel's usage dashboard after launch.</li>
       <li>Memory is counted as if submissions never overlap. When two arrive together they share one instance, so the real memory bill is lower.</li>
       <li>Not included: bots, retries and cold starts. At this scale they would need to be thousands of times higher to matter.</li>
       <li>Prices from Vercel's Functions pricing and London regional pricing pages, read 25 November 2026. Excludes tax.</li>
-    </ul>
+    </ul></details>
   </div>
 </section>
 
 <!-- 8 -->
+<div class="part"><span class="eyebrow">Part 4</span><h2>Forms, bookings and data</h2></div>
 <section class="s" id="forms">
   <div class="shead"><span class="num">08</span><h2>Consultation form and bookings</h2>
   <p>Before an enquiry reaches Zoho, the TPS handler asks Cloudflare whether the visitor passed the Turnstile bot check. Failed checks are rejected and nothing is sent on. Treatment bookings go straight to SimplyBook, which handles confirmation.</p></div>
-  <div class="framebar"><span>Turnstile sequence</span><a href="diagrams/turnstile.html" target="_blank" rel="noopener">Open full screen</a></div>
-  <iframe class="frame" src="diagrams/turnstile.html" title="Turnstile and Zoho sequence diagram" loading="lazy"></iframe>
+  <p class="takeaway"><b>Bottom line:</b> Bots are filtered before enquiries reach Zoho. Bookings stay entirely in SimplyBook.</p>
+  <figure class="dia"><a class="canvas" href="diagrams/turnstile.html" target="_blank" rel="noopener"><img src="diagrams/turnstile.svg" alt="Turnstile sequence" loading="lazy"></a><figcaption><span>Turnstile sequence</span><a href="diagrams/turnstile.html" target="_blank" rel="noopener">Open interactive diagram ↗</a></figcaption></figure>
   <div class="grid2">
     <div class="panel" style="display:grid;gap:10px"><h3>Alternative if Zoho hosts the form</h3>
       <div class="tablewrap"><svg viewBox="0 0 460 70" width="100%" role="img" aria-label="Browser goes directly to Zoho hosted form, then Zoho">
@@ -368,6 +409,7 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
 <section class="s" id="database">
   <div class="shead"><span class="num">09</span><h2>Do we need a database?</h2>
   <p>Not for launch if Zoho and SimplyBook keep all the records and the site has no logins. If TPS wants its own copy of enquiries or other records, add PostgreSQL. PostgreSQL is the database engine, Neon and Supabase are two companies that host it, and Prisma is the code library the website uses to talk to it.</p></div>
+  <p class="takeaway"><b>Bottom line:</b> Not needed for launch. If TPS wants its own records, Neon is the simplest choice.</p>
   <div class="tablewrap panel"><table>
     <thead><tr><th></th><th>Neon</th><th>Supabase</th></tr></thead>
     <tbody>
@@ -389,14 +431,16 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
       <div class="out hi"><span>Paid-plan equivalent</span><b id="db-cost"></b></div>
     </div>
     <div id="db-free"></div>
-    <p class="note">Paid estimate = CU-hours × $0.106 + storage × $0.35. RAM ≈ CU × 4 GB. Running time includes the idle period before the database suspends. Free-tier check (≤100 CU-hours and ≤1 GB) is illustrative; verify the current plan and all its limits, and note free tiers can have operational limitations. Supabase Pro is about $25/month (illustrative).</p>
+    <details class="fine"><summary>Assumptions and sources</summary><p class="note">Paid estimate = CU-hours × $0.106 + storage × $0.35. RAM ≈ CU × 4 GB. Running time includes the idle period before the database suspends. Free-tier check (≤100 CU-hours and ≤1 GB) is illustrative; verify the current plan and all its limits, and note free tiers can have operational limitations. Supabase Pro is about $25/month (illustrative).</p></details>
   </div>
 </section>
 
 <!-- 10 -->
+<div class="part"><span class="eyebrow">Part 5</span><h2>Budget and approval</h2></div>
 <section class="s" id="costs">
   <div class="shead"><span class="num">10</span><h2>Monthly cost estimate</h2>
   <p>The likely monthly provider bill is the Vercel plan seat, since usage at launch traffic fits inside the included credit. Compute and R2 figures come live from sections 6 and 7. These are estimates, not invoices.</p></div>
+  <p class="takeaway"><b>Bottom line:</b> Expect about $20 a month in provider fees at launch. Add a contingency rather than treating any figure as a cap.</p>
   <div class="panel" style="display:grid;gap:14px">
     <div class="controls">
       <div class="ctl"><label for="c-seats">Vercel paid seats</label><input type="number" id="c-seats" min="1" step="1" value="1"></div>
@@ -416,13 +460,14 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
   <div class="tablewrap panel"><table>
     <thead><tr><th>Reference scenario (1 seat, default usage)</th><th class="n">USD / month</th></tr></thead>
     <tbody><tr><td>No database</td><td class="n">$20</td></tr><tr><td>Neon Free (if eligible)</td><td class="n">$20</td></tr><tr><td>Neon paid, illustrative $15 usage</td><td class="n">$35</td></tr><tr><td>Supabase Pro, illustrative</td><td class="n">$45</td></tr></tbody></table>
-    <p class="note" style="margin-top:10px">Not included: taxes, domain renewal, SimplyBook and Zoho subscriptions, engineering fees, unmodelled CDN, edge, transfer or image optimisation charges, backup or history retention, and support plans. The usage credit applies only to eligible usage; check plan allowances so nothing is counted twice. Use the contingency line for a buffer instead of treating any figure as a cap.</p></div>
+    <details class="fine" style="margin-top:10px"><summary>What these figures leave out</summary><p class="note">Not included: taxes, domain renewal, SimplyBook and Zoho subscriptions, engineering fees, unmodelled CDN, edge, transfer or image optimisation charges, backup or history retention, and support plans. The usage credit applies only to eligible usage; check plan allowances so nothing is counted twice. Use the contingency line for a buffer instead of treating any figure as a cap.</p></details></div>
 </section>
 
 <!-- 11 -->
 <section class="s" id="verify">
   <div class="shead"><span class="num">11</span><h2>Verify and approve</h2>
   <p>The rates on this page were carried forward from planning and have not been re-checked. Before final sign-off, they should be confirmed against the providers' current pages.</p></div>
+  <p class="takeaway"><b>Bottom line:</b> Six decisions for TPS to approve, and a few provider details to confirm before the build starts.</p>
   <div class="grid2">
     <div class="panel" style="display:grid;gap:8px"><h3>Official pricing references</h3><ul class="facts">
       <li><a href="https://vercel.com/pricing" target="_blank" rel="noopener">Vercel pricing</a></li>
@@ -629,5 +674,15 @@ ol.check { margin: 0; padding-left: 20px; display: grid; gap: 6px }
     try { navigator.clipboard.writeText(lastSummary).then(() => { msg.textContent = 'Copied.'; }, fallback); } catch (e) { fallback(); }
   });
   update();
+
+  (function () {
+    const links = [...document.querySelectorAll('.topbar a')];
+    const byId = Object.fromEntries(links.map((a) => [a.getAttribute('href').slice(1), a]));
+    if (!('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { links.forEach((a) => a.classList.remove('on')); const a = byId[e.target.id]; if (a) { a.classList.add('on'); const nav = a.parentElement; nav.scrollLeft = a.offsetLeft - nav.clientWidth / 2 + a.offsetWidth / 2; } } });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    Object.keys(byId).forEach((id) => { const s = document.getElementById(id); if (s) io.observe(s); });
+  })();
 })();
 </script>

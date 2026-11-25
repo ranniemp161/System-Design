@@ -23,10 +23,25 @@ jobs:
         uses: actions/checkout@v5
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      # index.html is a body fragment (the Claude artifact host adds the document head);
+      # give the standalone site a doctype and mobile viewport.
+      - name: Build site
+        run: |
+          mkdir -p _site
+          cp -r tps-briefing/. _site/
+          {
+            echo '<!doctype html>'
+            echo '<html lang="en">'
+            echo '<head>'
+            echo '<meta charset="utf-8">'
+            echo '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
+            cat tps-briefing/index.html
+            echo '</html>'
+          } > _site/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: './tps-briefing'
+          path: './_site'
 
   # Separate job so the uploaded artifact is fully registered before deploy looks it up
   deploy:
